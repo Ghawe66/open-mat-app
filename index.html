@@ -17,8 +17,8 @@
         .belt-white { border-left: 5px solid #f0f0f0; }
         .belt-blue { border-left: 5px solid #0d6efd; color: #0d6efd; }
         .belt-purple { border-left: 5px solid #6f42c1; color: #6f42c1; }
-        .belt-brown { border-left: 5px solid #795548; color: #795548; }
-        .belt-black { border-left: 5px solid #212529; color: #212529; }
+        .belt-brown { border-left: 6px solid #795548; color: #795548; }
+        .belt-black { border-left: 6px solid #212529; color: #212529; }
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
         .profile-btn { position: absolute; left: 15px; top: 15px; cursor: pointer; }
@@ -79,7 +79,7 @@
             <div class="modal-header border-0"><h5 class="modal-title fw-bold">Ustaw Sparing</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
               <form id="addEventForm">
-                <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa (np. Kulanki wieczorne)" required>
+                <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa" required>
                 <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce" required>
                 <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
                 <button type="submit" class="btn btn-dark w-100">Opublikuj</button>
@@ -127,7 +127,9 @@
 
         async function loadUserProfile() {
             const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-            if (docSnap.exists()) userProfile = docSnap.data();
+            if (docSnap.exists()) {
+                userProfile = docSnap.data();
+            }
             document.getElementById('profName').value = userProfile.name || '';
             document.getElementById('profBelt').value = userProfile.belt || 'white';
             document.getElementById('profWeight').value = userProfile.weight || '';
@@ -146,7 +148,6 @@
             return [49.8225 + (Math.random()*0.01), 19.0444 + (Math.random()*0.01)];
         }
 
-        // GENERATOR KALENDARZA (.ics)
         window.addToCalendar = (name, loc, date) => {
             const dateObj = new Date(date);
             const start = dateObj.toISOString().replace(/-|:|\.\d+/g, "");
@@ -204,18 +205,39 @@
 
         window.deleteEvent = async (id) => { if(confirm("Usunąć matę?")) await deleteDoc(doc(db, "events", id)); };
 
+        // POPRAWIONA FUNKCJA DOŁĄCZANIA
         window.joinEvent = async (eventId) => {
-            if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
-            await updateDoc(doc(db, 'events', eventId), {
-                participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style })
-            });
+            if(!userProfile.name) {
+                new bootstrap.Modal(document.getElementById('profileModal')).show();
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'events', eventId), {
+                    participants: arrayUnion({ 
+                        uid: currentUser.uid, 
+                        name: userProfile.name, 
+                        belt: userProfile.belt || 'white', 
+                        weight: userProfile.weight || '85', 
+                        style: userProfile.style || 'GI' 
+                    })
+                });
+            } catch (err) {
+                alert("Błąd dołączania. Spróbuj najpierw wejść w Profil i kliknąć Zapisz Zmiany.");
+            }
         };
 
-        window.leaveEvent = async (eventId, entryJson) => { await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(JSON.parse(entryJson)) }); };
+        window.leaveEvent = async (eventId, entryJson) => { 
+            await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(JSON.parse(entryJson)) }); 
+        };
 
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const updated = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
+            const updated = { 
+                name: document.getElementById('profName').value, 
+                belt: document.getElementById('profBelt').value, 
+                weight: document.getElementById('profWeight').value, 
+                style: document.getElementById('profStyle').value 
+            };
             await setDoc(doc(db, "users", currentUser.uid), updated);
             userProfile = updated;
             bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
