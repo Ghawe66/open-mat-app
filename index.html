@@ -9,40 +9,43 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
-        :root { --bjj-black: #121212; --bjj-card: #1e1e1e; --bjj-blue: #0d6efd; --bjj-text: #e0e0e0; }
-        body { background-color: var(--bjj-black); color: var(--bjj-text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding-bottom: 90px; }
-        .app-header { background: linear-gradient(180deg, #212529 0%, #121212 100%); padding: 20px 0; border-bottom: 1px solid #333; }
-        #map { height: 250px; width: 100%; border-bottom: 2px solid #333; filter: grayscale(0.5) invert(0.9) hue-rotate(180deg); }
-        .event-card { background-color: var(--bjj-card); border: 1px solid #333; border-radius: 15px; margin-bottom: 20px; transition: transform 0.2s; }
-        .event-card:hover { transform: translateY(-3px); }
-        .participant-tag { border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: inline-block; margin: 4px 2px; background: #2a2a2a; color: #fff; border: 1px solid #444; }
-        .belt-white { border-left: 5px solid #fff; }
-        .belt-blue { border-left: 5px solid #0d6efd; }
-        .belt-purple { border-left: 5px solid #6f42c1; }
-        .belt-brown { border-left: 5px solid #795548; }
-        .belt-black { border-left: 5px solid #000; }
-        .fab-button { position: fixed; bottom: 25px; right: 25px; border-radius: 50px; padding: 15px 30px; font-weight: bold; background-color: var(--bjj-blue); border: none; box-shadow: 0 5px 15px rgba(13,110,253,0.4); z-index: 1001; }
-        .modal-content { background-color: var(--bjj-card); color: var(--bjj-text); border: 1px solid #444; }
-        .form-control, .form-select { background-color: #2a2a2a; border: 1px solid #444; color: #fff; }
-        .form-control:focus { background-color: #333; color: #fff; border-color: var(--bjj-blue); box-shadow: none; }
-        .note-box { background: #252525; padding: 10px; border-radius: 8px; font-style: italic; font-size: 0.9rem; color: #aaa; margin: 10px 0; border-left: 3px solid var(--bjj-blue); }
+        body { background-color: #f4f7f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 90px; color: #333; }
+        .app-header { background-color: #212529; color: white; padding: 18px 0; text-align: center; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        #map { height: 220px; width: 100%; border-bottom: 2px solid #dee2e6; z-index: 1; }
+        
+        .event-card { margin-bottom: 20px; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: white; overflow: hidden; position: relative; }
+        .note-box { background: #fdfdfe; padding: 10px; border-radius: 8px; font-style: italic; font-size: 0.85rem; color: #666; margin: 10px 0; border-left: 3px solid #0d6efd; }
+        
+        .participant-tag { border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; display: inline-block; margin: 3px 2px; background: #fff; border: 1px solid #eee; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .belt-white { border-left: 5px solid #e0e0e0; }
+        .belt-blue { border-left: 5px solid #0d6efd; color: #0d6efd; }
+        .belt-purple { border-left: 5px solid #6f42c1; color: #6f42c1; }
+        .belt-brown { border-left: 5px solid #795548; color: #795548; }
+        .belt-black { border-left: 5px solid #212529; color: #212529; }
+
+        .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f7f6; z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .fab-button { position: fixed; bottom: 25px; right: 25px; border-radius: 50px; padding: 14px 28px; box-shadow: 0 6px 20px rgba(13,110,253,0.3); z-index: 1000; font-weight: bold; border: none; }
+        .profile-btn { position: absolute; left: 20px; top: 18px; cursor: pointer; font-size: 1.1rem; }
+        .delete-event-btn { position: absolute; top: 12px; right: 12px; color: #dc3545; cursor: pointer; background: #fff5f5; border-radius: 50%; width: 32px; height: 32px; border: 1px solid #ffebeb; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <div id="authOverlay" class="auth-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bjj-black); z-index:2000; display:flex; align-items:center; justify-content:center;">
-        <div class="text-center p-4">
-            <h2 class="fw-bold mb-4">🥋 Wolna Mata</h2>
+    <div id="authOverlay" class="auth-overlay">
+        <div class="text-center p-4" style="max-width: 350px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+            <h2 class="fw-bold mb-3">🥋 Wolna Mata</h2>
+            <p class="text-muted small mb-4">Znajdź sparing w swojej okolicy</p>
             <input type="email" id="emailInput" class="form-control mb-2" placeholder="E-mail">
             <input type="password" id="passwordInput" class="form-control mb-3" placeholder="Hasło">
-            <button id="loginEmailBtn" class="btn btn-primary w-100 mb-2">Zaloguj</button>
-            <button id="registerEmailBtn" class="btn btn-outline-light w-100">Załóż konto</button>
+            <button id="loginEmailBtn" class="btn btn-dark w-100 mb-2 py-2">Zaloguj się</button>
+            <button id="registerEmailBtn" class="btn btn-outline-dark w-100 py-2">Załóż konto</button>
         </div>
     </div>
 
-    <div class="app-header text-center">
-        <div id="openProfile" style="position:absolute; left:20px; cursor:pointer; font-size: 1.2rem;">👤</div>
+    <div class="app-header">
+        <div id="openProfile" class="profile-btn">👤</div>
         <h4 class="m-0 fw-bold">WOLNA MATA</h4>
+        <div id="userInfo" class="small" style="font-size: 0.65rem; opacity: 0.7;"></div>
     </div>
 
     <div id="map"></div>
@@ -50,16 +53,57 @@
 
     <button class="btn btn-primary fab-button" data-bs-toggle="modal" data-bs-target="#addEventModal">+ NOWA MATA</button>
 
-    <div class="modal fade" id="profileModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header border-0"><h5 class="fw-bold">Profil Zawodnika</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="profileForm"><input type="text" id="profName" class="form-control mb-2" placeholder="Imię i Nazwisko" required><select id="profBelt" class="form-select mb-2"><option value="white">Biały pas</option><option value="blue">Niebieski pas</option><option value="purple">Purpurowy pas</option><option value="brown">Brązowy pas</option><option value="black">Czarny pas</option></select><select id="profStyle" class="form-select mb-2"><option value="GI">GI</option><option value="NoGi">NoGi</option></select><input type="number" id="profWeight" class="form-control mb-4" placeholder="Waga (kg)"><button type="submit" class="btn btn-primary w-100">Zapisz</button></form><hr><button onclick="window.handleLogout()" class="btn btn-link text-danger w-100">Wyloguj</button></div></div></div></div>
+    <div class="modal fade" id="profileModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+          <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Twój Profil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <form id="profileForm">
+              <label class="small text-muted mb-1">Imię / Nick</label>
+              <input type="text" id="profName" class="form-control mb-3" required>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="small text-muted mb-1">Pas</label>
+                    <select id="profBelt" class="form-select"><option value="white">Biały</option><option value="blue">Niebieski</option><option value="purple">Purpurowy</option><option value="brown">Brązowy</option><option value="black">Czarny</option></select>
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted mb-1">Styl</label>
+                    <select id="profStyle" class="form-select"><option value="GI">GI</option><option value="NoGi">NoGi</option><option value="Mix">GI+NoGi</option></select>
+                </div>
+              </div>
+              <label class="small text-muted mb-1">Waga (kg)</label>
+              <input type="number" id="profWeight" class="form-control mb-4">
+              <button type="submit" class="btn btn-dark w-100 py-2">Zapisz ustawienia</button>
+            </form>
+            <hr><button onclick="window.handleLogout()" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <div class="modal fade" id="addEventModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header border-0"><h5 class="fw-bold">Ustaw Sparing</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="addEventForm"><input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa (np. Drille i kule)" required><input type="text" id="eventLocation" class="form-control mb-2" placeholder="Klub i miasto" required><textarea id="eventNote" class="form-control mb-2" placeholder="Notatki (np. tylko technika, mocno pod zawody)"></textarea><input type="datetime-local" id="eventDate" class="form-control mb-3" required><button type="submit" class="btn btn-primary w-100">Dodaj na mapę</button></form></div></div></div></div>
+    <div class="modal fade" id="addEventModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius: 15px;">
+          <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Dodaj Sparing</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <form id="addEventForm">
+              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa (np. Drille + Sparingi)" required>
+              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce (np. Bastion Bielsko)" required>
+              <textarea id="eventNote" class="form-control mb-2" placeholder="Dodatkowe informacje (np. tylko NoGi, 10 rund)" rows="2"></textarea>
+              <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
+              <button type="submit" class="btn btn-primary w-100 py-2">Wrzuć na mapę</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -76,12 +120,8 @@
         const auth = getAuth(app);
 
         let currentUser = null;
-        let userProfile = {};
+        let userProfile = { name: '', belt: 'white', weight: '', style: 'GI' };
         let markersLayer = L.layerGroup();
-
-        var map = L.map('map').setView([49.8225, 19.0444], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        markersLayer.addTo(map);
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -95,75 +135,94 @@
         });
 
         async function loadUserProfile() {
-            const snap = await getDoc(doc(db, "users", currentUser.uid));
-            if (snap.exists()) userProfile = snap.data();
+            const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+            if (docSnap.exists()) userProfile = docSnap.data();
             document.getElementById('profName').value = userProfile.name || '';
             document.getElementById('profBelt').value = userProfile.belt || 'white';
             document.getElementById('profWeight').value = userProfile.weight || '';
             document.getElementById('profStyle').value = userProfile.style || 'GI';
+            document.getElementById('userInfo').innerText = `Matę grzeje: ${userProfile.name || currentUser.email}`;
         }
+
+        var map = L.map('map').setView([49.8225, 19.0444], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        markersLayer.addTo(map);
 
         async function getRealCoords(location) {
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location + " Bielsko-Biała")}`);
-                const data = await response.json();
-                if (data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-            } catch (e) { console.error(e); }
-            return [49.8225, 19.0444];
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+                const data = await res.json();
+                if(data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            } catch(e) {}
+            return [49.8225 + (Math.random()*0.01), 19.0444 + (Math.random()*0.01)];
         }
 
         function loadEvents() {
             const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-            onSnapshot(q, async (snapshot) => {
+            onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('events-list');
                 list.innerHTML = '';
                 markersLayer.clearLayers();
 
-                for (const docSnap of snapshot.docs) {
+                snapshot.forEach((docSnap) => {
                     const ev = docSnap.data();
                     const id = docSnap.id;
                     const participants = ev.participants || [];
                     const myEntry = participants.find(p => p.uid === currentUser.uid);
+                    const isCreator = ev.creatorId === currentUser.uid;
                     
-                    if(ev.lat && ev.lng) {
-                        L.marker([ev.lat, ev.lng]).addTo(markersLayer).bindPopup(`<b>${ev.name}</b><br>${ev.location}`);
-                    }
+                    if(ev.lat) L.marker([ev.lat, ev.lng]).addTo(markersLayer).bindPopup(`<b>${ev.name}</b>`);
 
                     let partHtml = participants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name}</span>`).join('');
 
                     list.innerHTML += `
-                        <div class="card event-card shadow">
-                            <div class="card-body">
+                        <div class="card event-card">
+                            <div class="card-body p-4">
+                                ${isCreator ? `<button class="delete-event-btn" onclick="window.deleteEvent('${id}')">🗑️</button>` : ''}
                                 <h5 class="fw-bold mb-1">${ev.name}</h5>
                                 <p class="small text-muted mb-2">📍 ${ev.location} | 📅 ${ev.date.replace('T', ' ')}</p>
                                 ${ev.note ? `<div class="note-box">"${ev.note}"</div>` : ''}
-                                <div class="mb-3">${partHtml || '<span class="text-muted small">Czekamy na chętnych...</span>'}</div>
+                                <div class="mb-3">${partHtml || '<span class="text-muted small">Brak zapisów</span>'}</div>
                                 <div class="row g-2">
-                                    <div class="col-9">
+                                    <div class="col-8">
                                         ${myEntry 
                                             ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}')">Wypisz się</button>`
-                                            : `<button class="btn btn-primary btn-sm w-100" onclick="window.joinEvent('${id}')">Dołącz do maty</button>`
+                                            : `<button class="btn btn-dark btn-sm w-100" onclick="window.joinEvent('${id}')">Dołącz do maty</button>`
                                         }
                                     </div>
-                                    <div class="col-3"><button class="btn btn-outline-light btn-sm w-100" onclick="window.addToCal('${ev.name}','${ev.location}','${ev.date}')">📅</button></div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="window.handleCal('${ev.name}','${ev.location}','${ev.date}')">📅</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>`;
-                }
+                });
             });
         }
+
+        window.deleteEvent = async (id) => { if(confirm("Usunąć matę?")) await deleteDoc(doc(db, "events", id)); };
+
+        window.joinEvent = async (eventId) => {
+            if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
+            await updateDoc(doc(db, 'events', eventId), {
+                participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style })
+            });
+        };
+
+        window.leaveEvent = async (eventId, entryJson) => { 
+            await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(JSON.parse(entryJson)) }); 
+        };
 
         document.getElementById('addEventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const loc = document.getElementById('eventLocation').value;
-            const [lat, lng] = await getRealCoords(loc);
-            
+            const coords = await getRealCoords(loc);
             await addDoc(collection(db, "events"), {
                 name: document.getElementById('eventName').value,
                 location: loc,
                 note: document.getElementById('eventNote').value,
                 date: document.getElementById('eventDate').value,
-                lat: lat, lng: lng,
+                lat: coords[0], lng: coords[1],
                 createdAt: new Date(),
                 participants: [],
                 creatorId: currentUser.uid
@@ -172,24 +231,25 @@
             e.target.reset();
         });
 
-        window.joinEvent = async (id) => {
-            if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
-            await updateDoc(doc(db, 'events', id), { participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style }) });
-        };
-
-        window.leaveEvent = async (id, entry) => { await updateDoc(doc(db, 'events', id), { participants: arrayRemove(JSON.parse(entry)) }); };
-        
-        window.handleLogout = () => signOut(auth);
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const up = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
-            await setDoc(doc(db, "users", currentUser.uid), up);
-            userProfile = up;
+            const updated = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
+            await setDoc(doc(db, "users", currentUser.uid), updated);
+            userProfile = updated;
             bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+            loadUserProfile();
         });
+
+        window.handleCal = (n, l, d) => {
+            const start = new Date(d).toISOString().replace(/-|:|\.\d+/g, "");
+            const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:🥋 BJJ: ${n}\nDTSTART:${start}\nLOCATION:${l}\nEND:VEVENT\nEND:VCALENDAR`;
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'}));
+            link.download = 'trening.ics';
+            link.click();
+        };
+
         document.getElementById('openProfile').addEventListener('click', () => new bootstrap.Modal(document.getElementById('profileModal')).show());
+        window.handleLogout = () => signOut(auth);
         document.getElementById('loginEmailBtn').addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd")));
         document.getElementById('registerEmailBtn').addEventListener('click', () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd")));
-    </script>
-</body>
-</html>
