@@ -22,6 +22,7 @@
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
         .profile-btn { position: absolute; left: 15px; top: 15px; cursor: pointer; }
+        .note-text { font-style: italic; font-size: 0.85rem; color: #666; background: #fdfdfe; padding: 5px 10px; border-left: 3px solid #0d6efd; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -74,8 +75,9 @@
           <div class="modal-header border-0"><h5 class="modal-title fw-bold">Nowa mata</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
           <div class="modal-body">
             <form id="addEventForm">
-              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa" required>
-              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce" required>
+              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa (np. Kulanki techniczne)" required>
+              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce (np. Bastion Bielsko)" required>
+              <textarea id="eventNote" class="form-control mb-2" placeholder="Dodatkowe info (np. tylko góra, weź rashguard)" rows="2"></textarea>
               <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
               <button type="submit" class="btn btn-dark w-100">Opublikuj</button>
             </form>
@@ -107,6 +109,7 @@
 
         let currentUser = null;
         let userProfile = { name: '', belt: 'white', weight: '', style: 'GI' };
+        let markersLayer = L.layerGroup();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -126,38 +129,32 @@
             document.getElementById('profBelt').value = userProfile.belt || 'white';
             document.getElementById('profWeight').value = userProfile.weight || '';
             document.getElementById('profStyle').value = userProfile.style || 'GI';
-            document.getElementById('userInfo').innerText = `Zalogowany: ${userProfile.name || currentUser.email}`;
+            document.getElementById('userInfo').innerText = `Matę grzeje: ${userProfile.name || currentUser.email}`;
         }
 
         var map = L.map('map').setView([49.8225, 19.0444], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        markersLayer.addTo(map);
 
-        // --- GENERATOR KALENDARZA (Add & Cancel) ---
+        // Geocoding - próba znalezienia współrzędnych klubu
+        async function getRealCoords(location) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+                const data = await res.json();
+                if(data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            } catch(e) {}
+            return [49.8225 + (Math.random()*0.01), 19.0444 + (Math.random()*0.01)];
+        }
+
         window.manageCalendar = (name, loc, date, eventId, isCancel = false) => {
             const dateObj = new Date(date);
             const start = dateObj.toISOString().replace(/-|:|\.\d+/g, "");
             const end = new Date(dateObj.getTime() + 60 * 60 * 1000).toISOString().replace(/-|:|\.\d+/g, "");
-            
-            // Kluczowe: UID musi być takie samo dla zapisu i kasowania
             const uid = `bjj-event-${eventId}@wolnamata.pl`;
             const method = isCancel ? "CANCEL" : "PUBLISH";
             const status = isCancel ? "CANCELLED" : "CONFIRMED";
 
-            const icsData = `BEGIN:VCALENDAR
-VERSION:2.0
-METHOD:${method}
-BEGIN:VEVENT
-UID:${uid}
-DTSTAMP:${start}
-DTSTART:${start}
-DTEND:${end}
-SUMMARY:🥋 BJJ: ${name}
-LOCATION:${loc}
-STATUS:${status}
-DESCRIPTION:Trening BJJ z aplikacji Wolna Mata
-END:VEVENT
-END:VCALENDAR`;
-
+            const icsData = `BEGIN:VCALENDAR\nVERSION:2.0\nMETHOD:${method}\nBEGIN:VEVENT\nUID:${uid}\nDTSTAMP:${start}\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:🥋 BJJ: ${name}\nLOCATION:${loc}\nSTATUS:${status}\nDESCRIPTION:Trening BJJ z aplikacji Wolna Mata\nEND:VEVENT\nEND:VCALENDAR`;
             const blob = new Blob([icsData], { type: 'text/calendar' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -171,24 +168,32 @@ END:VCALENDAR`;
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('events-list');
                 list.innerHTML = '';
+                markersLayer.clearLayers();
+
                 snapshot.forEach((docSnap) => {
                     const ev = docSnap.data();
                     const id = docSnap.id;
                     const participants = ev.participants || [];
                     const myEntry = participants.find(p => p.uid === currentUser.uid);
                     
-                    let partHtml = participants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name}</span>`).join('');
+                    if(ev.lat) L.marker([ev.lat, ev.lng]).addTo(markersLayer).bindPopup(`<b>${ev.name}</b>`);
+                    
+                    // Naprawione: dodanie wagi i stylu do tagu
+                    let partHtml = participants.map(p => 
+                        `<span class="participant-tag belt-${p.belt}">${p.name} (${p.weight || '?'}kg, ${p.style || 'GI'})</span>`
+                    ).join('');
 
                     list.innerHTML += `
                         <div class="card event-card mb-3">
                             <div class="card-body">
                                 <h5 class="fw-bold mb-1">${ev.name}</h5>
                                 <p class="small text-muted mb-2">📍 ${ev.location} | 📅 ${ev.date.replace('T', ' ')}</p>
-                                <div class="mb-3">${partHtml || '<span class="text-muted small">Brak chętnych</span>'}</div>
+                                ${ev.note ? `<div class="note-text">"${ev.note}"</div>` : ''}
+                                <div class="mb-3">${partHtml || '<span class="text-muted small">Czekamy na chętnych...</span>'}</div>
                                 <div class="row g-2">
                                     <div class="col-9">
                                         ${myEntry 
-                                            ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', '${ev.name}', '${ev.location}', '${ev.date}')">Wypisz się i usuń z kalendarza</button>`
+                                            ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', '${ev.name}', '${ev.location}', '${ev.date}')">Wypisz się i kalendarz</button>`
                                             : `<button class="btn btn-dark btn-sm w-100" onclick="window.joinEvent('${id}')">Dołącz do maty</button>`
                                         }
                                     </div>
@@ -210,9 +215,7 @@ END:VCALENDAR`;
         };
 
         window.leaveEvent = async (eventId, entryJson, name, loc, date) => {
-            // 1. Usuń z bazy
             await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(JSON.parse(entryJson)) });
-            // 2. Pobierz plik usuwający z kalendarza
             window.manageCalendar(name, loc, date, eventId, true);
         };
 
@@ -227,10 +230,15 @@ END:VCALENDAR`;
 
         document.getElementById('addEventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const loc = document.getElementById('eventLocation').value;
+            const coords = await getRealCoords(loc);
             await addDoc(collection(db, "events"), {
                 name: document.getElementById('eventName').value,
-                location: document.getElementById('eventLocation').value,
+                location: loc,
+                note: document.getElementById('eventNote').value,
                 date: document.getElementById('eventDate').value,
+                lat: coords[0],
+                lng: coords[1],
                 createdAt: new Date(),
                 participants: []
             });
