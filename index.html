@@ -23,6 +23,7 @@
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
         .profile-btn { position: absolute; left: 15px; top: 15px; cursor: pointer; }
         .note-text { font-style: italic; font-size: 0.85rem; color: #666; background: #fdfdfe; padding: 5px 10px; border-left: 3px solid #0d6efd; margin-bottom: 10px; }
+        .delete-event-btn { position: absolute; top: 10px; right: 10px; color: #dc3545; cursor: pointer; background: #fff5f5; border-radius: 50%; width: 30px; height: 30px; border: 1px solid #ffebeb; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; z-index: 10; }
     </style>
 </head>
 <body>
@@ -75,9 +76,9 @@
           <div class="modal-header border-0"><h5 class="modal-title fw-bold">Nowa mata</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
           <div class="modal-body">
             <form id="addEventForm">
-              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa (np. Kulanki techniczne)" required>
-              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce (np. Bastion Bielsko)" required>
-              <textarea id="eventNote" class="form-control mb-2" placeholder="Dodatkowe info (np. tylko góra, weź rashguard)" rows="2"></textarea>
+              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa" required>
+              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce" required>
+              <textarea id="eventNote" class="form-control mb-2" placeholder="Notatki (np. tylko technika)" rows="2"></textarea>
               <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
               <button type="submit" class="btn btn-dark w-100">Opublikuj</button>
             </form>
@@ -91,7 +92,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -129,14 +130,13 @@
             document.getElementById('profBelt').value = userProfile.belt || 'white';
             document.getElementById('profWeight').value = userProfile.weight || '';
             document.getElementById('profStyle').value = userProfile.style || 'GI';
-            document.getElementById('userInfo').innerText = `Matę grzeje: ${userProfile.name || currentUser.email}`;
+            document.getElementById('userInfo').innerText = `Zalogowany: ${userProfile.name || currentUser.email}`;
         }
 
         var map = L.map('map').setView([49.8225, 19.0444], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         markersLayer.addTo(map);
 
-        // Geocoding - próba znalezienia współrzędnych klubu
         async function getRealCoords(location) {
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
@@ -153,7 +153,6 @@
             const uid = `bjj-event-${eventId}@wolnamata.pl`;
             const method = isCancel ? "CANCEL" : "PUBLISH";
             const status = isCancel ? "CANCELLED" : "CONFIRMED";
-
             const icsData = `BEGIN:VCALENDAR\nVERSION:2.0\nMETHOD:${method}\nBEGIN:VEVENT\nUID:${uid}\nDTSTAMP:${start}\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:🥋 BJJ: ${name}\nLOCATION:${loc}\nSTATUS:${status}\nDESCRIPTION:Trening BJJ z aplikacji Wolna Mata\nEND:VEVENT\nEND:VCALENDAR`;
             const blob = new Blob([icsData], { type: 'text/calendar' });
             const url = URL.createObjectURL(blob);
@@ -169,27 +168,25 @@
                 const list = document.getElementById('events-list');
                 list.innerHTML = '';
                 markersLayer.clearLayers();
-
                 snapshot.forEach((docSnap) => {
                     const ev = docSnap.data();
                     const id = docSnap.id;
                     const participants = ev.participants || [];
                     const myEntry = participants.find(p => p.uid === currentUser.uid);
-                    
+                    const isCreator = ev.creatorId === currentUser.uid;
+
                     if(ev.lat) L.marker([ev.lat, ev.lng]).addTo(markersLayer).bindPopup(`<b>${ev.name}</b>`);
                     
-                    // Naprawione: dodanie wagi i stylu do tagu
-                    let partHtml = participants.map(p => 
-                        `<span class="participant-tag belt-${p.belt}">${p.name} (${p.weight || '?'}kg, ${p.style || 'GI'})</span>`
-                    ).join('');
+                    let partHtml = participants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name} (${p.weight || '?'}kg, ${p.style || 'GI'})</span>`).join('');
 
                     list.innerHTML += `
                         <div class="card event-card mb-3">
                             <div class="card-body">
+                                ${isCreator ? `<button class="delete-event-btn" onclick="window.deleteEvent('${id}')">🗑️</button>` : ''}
                                 <h5 class="fw-bold mb-1">${ev.name}</h5>
                                 <p class="small text-muted mb-2">📍 ${ev.location} | 📅 ${ev.date.replace('T', ' ')}</p>
                                 ${ev.note ? `<div class="note-text">"${ev.note}"</div>` : ''}
-                                <div class="mb-3">${partHtml || '<span class="text-muted small">Czekamy na chętnych...</span>'}</div>
+                                <div class="mb-3">${partHtml || '<span class="text-muted small">Brak chętnych</span>'}</div>
                                 <div class="row g-2">
                                     <div class="col-9">
                                         ${myEntry 
@@ -206,6 +203,8 @@
                 });
             });
         }
+
+        window.deleteEvent = async (id) => { if(confirm("Czy na pewno chcesz usunąć to wydarzenie?")) await deleteDoc(doc(db, "events", id)); };
 
         window.joinEvent = async (eventId) => {
             if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
@@ -237,10 +236,10 @@
                 location: loc,
                 note: document.getElementById('eventNote').value,
                 date: document.getElementById('eventDate').value,
-                lat: coords[0],
-                lng: coords[1],
+                lat: coords[0], lng: coords[1],
                 createdAt: new Date(),
-                participants: []
+                participants: [],
+                creatorId: currentUser.uid
             });
             bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
             e.target.reset();
@@ -248,8 +247,16 @@
 
         document.getElementById('openProfile').addEventListener('click', () => new bootstrap.Modal(document.getElementById('profileModal')).show());
         window.handleLogout = () => signOut(auth);
-        document.getElementById('loginEmailBtn').addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd logowania")));
-        document.getElementById('registerEmailBtn').addEventListener('click', () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd rejestracji")));
+        document.getElementById('loginEmailBtn').addEventListener('click', () => {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Błąd logowania"));
+        });
+        document.getElementById('registerEmailBtn').addEventListener('click', () => {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Błąd rejestracji"));
+        });
     </script>
 </body>
 </html>
