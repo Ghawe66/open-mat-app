@@ -11,18 +11,17 @@
     <style>
         body { background-color: #f8f9fa; font-family: sans-serif; padding-bottom: 80px; }
         .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; position: relative; }
-        #map { height: 200px; width: 100%; border-bottom: 2px solid #dee2e6; z-index: 1; }
+        #map { height: 180px; width: 100%; border-bottom: 2px solid #dee2e6; z-index: 1; }
         .event-card { margin-bottom: 15px; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; overflow: hidden; }
         .participant-tag { border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: inline-block; margin: 4px 2px; background: white; border: 1px solid #dee2e6; font-weight: 500; }
         .belt-white { border-left: 5px solid #f0f0f0; }
         .belt-blue { border-left: 5px solid #0d6efd; color: #0d6efd; }
         .belt-purple { border-left: 5px solid #6f42c1; color: #6f42c1; }
-        .belt-brown { border-left: 6px solid #795548; color: #795548; }
-        .belt-black { border-left: 6px solid #212529; color: #212529; }
+        .belt-brown { border-left: 5px solid #795548; color: #795548; }
+        .belt-black { border-left: 5px solid #212529; color: #212529; }
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
         .profile-btn { position: absolute; left: 15px; top: 15px; cursor: pointer; }
-        .delete-event-btn { position: absolute; top: 10px; right: 10px; color: #dc3545; cursor: pointer; background: white; border-radius: 50%; width: 30px; height: 30px; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -53,18 +52,14 @@
           <div class="modal-header border-0"><h5 class="modal-title fw-bold">Profil Zawodnika</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
           <div class="modal-body">
             <form id="profileForm">
-              <label class="small text-muted">Imię i Nazwisko</label>
-              <input type="text" id="profName" class="form-control mb-2" required>
-              <label class="small text-muted">Kolor pasa</label>
+              <input type="text" id="profName" class="form-control mb-2" placeholder="Imię i Nazwisko" required>
               <select id="profBelt" class="form-select mb-2">
                 <option value="white">Biały</option><option value="blue">Niebieski</option><option value="purple">Purpurowy</option><option value="brown">Brązowy</option><option value="black">Czarny</option>
               </select>
-              <label class="small text-muted">Preferowany Styl</label>
               <select id="profStyle" class="form-select mb-2">
                 <option value="GI">GI (Kimono)</option><option value="NoGi">NoGi</option><option value="GI+NoGi">GI i NoGi</option>
               </select>
-              <label class="small text-muted">Waga (kg)</label>
-              <input type="number" id="profWeight" class="form-control mb-4">
+              <input type="number" id="profWeight" class="form-control mb-4" placeholder="Waga (kg)">
               <button type="submit" class="btn btn-dark w-100">Zapisz profil</button>
             </form>
             <hr><button onclick="window.handleLogout()" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
@@ -74,19 +69,19 @@
     </div>
 
     <div class="modal fade" id="addEventModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header border-0"><h5 class="modal-title fw-bold">Ustaw Sparing</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-              <form id="addEventForm">
-                <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa" required>
-                <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce" required>
-                <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
-                <button type="submit" class="btn btn-dark w-100">Opublikuj</button>
-              </form>
-            </div>
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0"><h5 class="modal-title fw-bold">Nowa mata</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <form id="addEventForm">
+              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa" required>
+              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce" required>
+              <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
+              <button type="submit" class="btn btn-dark w-100">Opublikuj</button>
+            </form>
           </div>
         </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -94,7 +89,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -112,7 +107,6 @@
 
         let currentUser = null;
         let userProfile = { name: '', belt: 'white', weight: '', style: 'GI' };
-        let markersLayer = L.layerGroup();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -127,37 +121,48 @@
 
         async function loadUserProfile() {
             const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-            if (docSnap.exists()) {
-                userProfile = docSnap.data();
-            }
+            if (docSnap.exists()) userProfile = docSnap.data();
             document.getElementById('profName').value = userProfile.name || '';
             document.getElementById('profBelt').value = userProfile.belt || 'white';
             document.getElementById('profWeight').value = userProfile.weight || '';
             document.getElementById('profStyle').value = userProfile.style || 'GI';
-            document.getElementById('userInfo').innerText = `${userProfile.name || currentUser.email} (${userProfile.style || 'GI'})`;
+            document.getElementById('userInfo').innerText = `Zalogowany: ${userProfile.name || currentUser.email}`;
         }
 
         var map = L.map('map').setView([49.8225, 19.0444], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        markersLayer.addTo(map);
 
-        function getCoords(loc) {
-            const l = loc.toLowerCase();
-            if(l.includes('bastion')) return [49.822, 19.044];
-            if(l.includes('gorila')) return [49.828, 19.048];
-            return [49.8225 + (Math.random()*0.01), 19.0444 + (Math.random()*0.01)];
-        }
-
-        window.addToCalendar = (name, loc, date) => {
+        // --- GENERATOR KALENDARZA (Add & Cancel) ---
+        window.manageCalendar = (name, loc, date, eventId, isCancel = false) => {
             const dateObj = new Date(date);
             const start = dateObj.toISOString().replace(/-|:|\.\d+/g, "");
             const end = new Date(dateObj.getTime() + 60 * 60 * 1000).toISOString().replace(/-|:|\.\d+/g, "");
-            const icsData = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:🥋 BJJ: ${name}\nDTSTART:${start}\nDTEND:${end}\nLOCATION:${loc}\nDESCRIPTION:Trening BJJ z aplikacji Wolna Mata\nEND:VEVENT\nEND:VCALENDAR`;
+            
+            // Kluczowe: UID musi być takie samo dla zapisu i kasowania
+            const uid = `bjj-event-${eventId}@wolnamata.pl`;
+            const method = isCancel ? "CANCEL" : "PUBLISH";
+            const status = isCancel ? "CANCELLED" : "CONFIRMED";
+
+            const icsData = `BEGIN:VCALENDAR
+VERSION:2.0
+METHOD:${method}
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${start}
+DTSTART:${start}
+DTEND:${end}
+SUMMARY:🥋 BJJ: ${name}
+LOCATION:${loc}
+STATUS:${status}
+DESCRIPTION:Trening BJJ z aplikacji Wolna Mata
+END:VEVENT
+END:VCALENDAR`;
+
             const blob = new Blob([icsData], { type: 'text/calendar' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `trening.ics`;
+            link.download = isCancel ? `odwolaj_trening.ics` : `trening.ics`;
             link.click();
         };
 
@@ -166,35 +171,29 @@
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('events-list');
                 list.innerHTML = '';
-                markersLayer.clearLayers();
-
                 snapshot.forEach((docSnap) => {
                     const ev = docSnap.data();
                     const id = docSnap.id;
                     const participants = ev.participants || [];
                     const myEntry = participants.find(p => p.uid === currentUser.uid);
-                    const isCreator = ev.creatorId === currentUser.uid;
                     
-                    L.marker(getCoords(ev.location)).addTo(markersLayer).bindPopup(`<b>${ev.name}</b><br>${ev.location}`);
-
-                    let partHtml = participants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name} (${p.weight}kg, ${p.style || 'GI'})</span>`).join('');
+                    let partHtml = participants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name}</span>`).join('');
 
                     list.innerHTML += `
                         <div class="card event-card mb-3">
                             <div class="card-body">
-                                ${isCreator ? `<button class="delete-event-btn" onclick="window.deleteEvent('${id}')">🗑️</button>` : ''}
                                 <h5 class="fw-bold mb-1">${ev.name}</h5>
                                 <p class="small text-muted mb-2">📍 ${ev.location} | 📅 ${ev.date.replace('T', ' ')}</p>
                                 <div class="mb-3">${partHtml || '<span class="text-muted small">Brak chętnych</span>'}</div>
                                 <div class="row g-2">
-                                    <div class="col-8">
+                                    <div class="col-9">
                                         ${myEntry 
-                                            ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}')">Wypisz się</button>`
+                                            ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', '${ev.name}', '${ev.location}', '${ev.date}')">Wypisz się i usuń z kalendarza</button>`
                                             : `<button class="btn btn-dark btn-sm w-100" onclick="window.joinEvent('${id}')">Dołącz do maty</button>`
                                         }
                                     </div>
-                                    <div class="col-4">
-                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="window.addToCalendar('${ev.name}', '${ev.location}', '${ev.date}')">📅</button>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="window.manageCalendar('${ev.name}', '${ev.location}', '${ev.date}', '${id}', false)">📅</button>
                                     </div>
                                 </div>
                             </div>
@@ -203,41 +202,23 @@
             });
         }
 
-        window.deleteEvent = async (id) => { if(confirm("Usunąć matę?")) await deleteDoc(doc(db, "events", id)); };
-
-        // POPRAWIONA FUNKCJA DOŁĄCZANIA
         window.joinEvent = async (eventId) => {
-            if(!userProfile.name) {
-                new bootstrap.Modal(document.getElementById('profileModal')).show();
-                return;
-            }
-            try {
-                await updateDoc(doc(db, 'events', eventId), {
-                    participants: arrayUnion({ 
-                        uid: currentUser.uid, 
-                        name: userProfile.name, 
-                        belt: userProfile.belt || 'white', 
-                        weight: userProfile.weight || '85', 
-                        style: userProfile.style || 'GI' 
-                    })
-                });
-            } catch (err) {
-                alert("Błąd dołączania. Spróbuj najpierw wejść w Profil i kliknąć Zapisz Zmiany.");
-            }
+            if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
+            await updateDoc(doc(db, 'events', eventId), {
+                participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style })
+            });
         };
 
-        window.leaveEvent = async (eventId, entryJson) => { 
-            await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(JSON.parse(entryJson)) }); 
+        window.leaveEvent = async (eventId, entryJson, name, loc, date) => {
+            // 1. Usuń z bazy
+            await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(JSON.parse(entryJson)) });
+            // 2. Pobierz plik usuwający z kalendarza
+            window.manageCalendar(name, loc, date, eventId, true);
         };
 
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const updated = { 
-                name: document.getElementById('profName').value, 
-                belt: document.getElementById('profBelt').value, 
-                weight: document.getElementById('profWeight').value, 
-                style: document.getElementById('profStyle').value 
-            };
+            const updated = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
             await setDoc(doc(db, "users", currentUser.uid), updated);
             userProfile = updated;
             bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
@@ -251,8 +232,7 @@
                 location: document.getElementById('eventLocation').value,
                 date: document.getElementById('eventDate').value,
                 createdAt: new Date(),
-                participants: [],
-                creatorId: currentUser.uid
+                participants: []
             });
             bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
             e.target.reset();
