@@ -316,4 +316,62 @@
             const isFull = parts.length >= (data.limit || Infinity);
             
             if (myEntry) {
-                area.innerHTML = `<button class="btn btn-outline-danger w-100 py-3 fw-bold rounded-4" onclick="window.handleJoinLeave('${eventId}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', false); bootstrap.Modal.
+                area.innerHTML = `<button class="btn btn-outline-danger w-100 py-3 fw-bold rounded-4" onclick="window.handleJoinLeave('${eventId}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', false); bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();">OPUŚĆ MATĘ</button>`;
+            } else {
+                area.innerHTML = `<button class="btn btn-dark w-100 py-3 fw-bold rounded-4 ${isFull ? 'disabled' : ''}" onclick="window.handleJoinLeave('${eventId}', null, ${isFull}); bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();">${isFull ? 'BRAK MIEJSC' : 'WCHODZĘ W TO'}</button>`;
+            }
+            new bootstrap.Modal(document.getElementById('participantsModal')).show();
+        };
+
+        window.deleteEvent = async (id) => {
+            const res = await Swal.fire({ title: 'Usunąć matę?', text: "Tego nie da się cofnąć!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Tak, usuń!' });
+            if (res.isConfirmed) await deleteDoc(doc(db, "events", id));
+        };
+
+        // --- Widoki ---
+        document.getElementById('btnListView').onclick = () => {
+            document.getElementById('section-list').style.display = 'block';
+            document.getElementById('section-calendar').style.display = 'none';
+            document.getElementById('btnListView').className = 'btn btn-toggle btn-dark';
+            document.getElementById('btnCalendarView').className = 'btn btn-toggle btn-outline-dark';
+        };
+        document.getElementById('btnCalendarView').onclick = () => {
+            document.getElementById('section-list').style.display = 'none';
+            document.getElementById('section-calendar').style.display = 'block';
+            document.getElementById('btnListView').className = 'btn btn-toggle btn-outline-dark';
+            document.getElementById('btnCalendarView').className = 'btn btn-toggle btn-dark';
+            if (calendar) calendar.render();
+        };
+
+        document.getElementById('profileForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const up = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
+            await setDoc(doc(db, "users", currentUser.uid), up);
+            userProfile = up;
+            bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+            Swal.fire({ icon: 'success', title: 'Profil zaktualizowany', showConfirmButton: false, timer: 1500 });
+        };
+
+        document.getElementById('addEventForm').onsubmit = async (e) => {
+            e.preventDefault();
+            await addDoc(collection(db, "events"), {
+                name: document.getElementById('eventName').value, location: document.getElementById('eventLocation').value, 
+                note: document.getElementById('eventNote').value, date: document.getElementById('eventDate').value,
+                limit: parseInt(document.getElementById('eventLimit').value) || null,
+                createdAt: new Date(), participants: [], creatorId: currentUser.uid
+            });
+            bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+            e.target.reset();
+        };
+
+        document.getElementById('openProfile').onclick = () => new bootstrap.Modal(document.getElementById('profileModal')).show();
+        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+        document.getElementById('loginEmailBtn').onclick = () => {
+            signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => Swal.fire('Błąd', e.message, 'error'));
+        };
+        document.getElementById('registerEmailBtn').onclick = () => {
+            createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => Swal.fire('Błąd', e.message, 'error'));
+        };
+    </script>
+</body>
+</html>
