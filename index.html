@@ -6,10 +6,19 @@
     <title>Wolna Mata - Kalendarz Sparingowy</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Import czcionki Lato -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
     <style>
-        body { background-color: #f8f9fa; font-family: -apple-system, sans-serif; padding-bottom: 80px; color: #333; }
+        /* Zastosowanie czcionki Lato dla całej strony */
+        body { 
+            background-color: #f8f9fa; 
+            font-family: 'Lato', sans-serif; 
+            padding-bottom: 80px; 
+            color: #333; 
+        }
         .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; position: relative; }
         .view-toggle { background: white; border-bottom: 1px solid #dee2e6; padding: 10px 0; }
         
@@ -27,7 +36,7 @@
         .event-title-link:hover { color: #0d6efd; }
         
         #calendar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .fc-event { cursor: pointer; }
+        .fc-event { cursor: pointer; font-family: 'Lato', sans-serif; }
         
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
@@ -40,6 +49,7 @@
 </head>
 <body>
 
+    <!-- EKRAN LOGOWANIA -->
     <div id="authOverlay" class="auth-overlay">
         <div class="text-center p-4" style="max-width: 350px;">
             <h2 class="fw-bold mb-3">🥋 Wolna Mata</h2>
@@ -50,11 +60,13 @@
         </div>
     </div>
 
+    <!-- NAGŁÓWEK -->
     <div class="app-header">
         <div id="openProfile" class="profile-btn small text-secondary">👤 Profil</div>
         <h4 class="m-0 fw-bold">WOLNA MATA</h4>
     </div>
 
+    <!-- PRZEŁĄCZNIK WIDOKU -->
     <div class="view-toggle">
         <div class="container d-flex justify-content-center gap-2">
             <button id="btnListView" class="btn btn-dark btn-sm px-4">Lista</button>
@@ -66,7 +78,6 @@
         <div id="section-list">
             <div id="events-list"></div>
         </div>
-
         <div id="section-calendar" style="display: none;">
             <div id="calendar"></div>
         </div>
@@ -74,6 +85,7 @@
 
     <button class="btn btn-primary fab-button" data-bs-toggle="modal" data-bs-target="#addEventModal">+ Nowa Mata</button>
 
+    <!-- MODALE -->
     <div class="modal fade" id="participantsModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -122,6 +134,7 @@
       </div>
     </div>
 
+    <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     
@@ -160,7 +173,6 @@
             }
         });
 
-        // PRZEŁĄCZANIE WIDOKÓW
         document.getElementById('btnListView').addEventListener('click', () => {
             document.getElementById('section-list').style.display = 'block';
             document.getElementById('section-calendar').style.display = 'none';
@@ -173,7 +185,7 @@
             document.getElementById('section-calendar').style.display = 'block';
             document.getElementById('btnListView').className = 'btn btn-outline-dark btn-sm px-4';
             document.getElementById('btnCalendarView').className = 'btn btn-dark btn-sm px-4';
-            calendar.render(); // Ważne: renderuj po pokazaniu diva
+            calendar.render();
         });
 
         function initCalendar() {
@@ -208,7 +220,6 @@
                     const participants = ev.participants || [];
                     const myEntry = participants.find(p => p.uid === currentUser.uid);
 
-                    // Dodaj do kalendarza
                     calendar.addEvent({
                         id: id,
                         title: ev.name,
@@ -217,7 +228,6 @@
                         borderColor: '#212529'
                     });
 
-                    // Renderuj kartę listy
                     const sortedParticipants = [...participants].sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
                     let partHtml = sortedParticipants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name}</span>`).join('');
 
