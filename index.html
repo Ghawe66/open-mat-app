@@ -4,42 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sparingi BJJ - Znajdź partnera na matę</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
-        body { background-color: #f8f9fa; font-family: sans-serif; }
+        body { background-color: #f8f9fa; font-family: sans-serif; padding-bottom: 80px; }
         .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; }
-        .event-card { margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* Styl dla mapy - optymalna wysokość na telefon */
+        #map { height: 250px; width: 100%; z-index: 1; border-bottom: 2px solid #dee2e6; }
+        
+        /* Pasek filtrów pod mapą */
+        .filter-bar { background-color: white; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .date-pills { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; scrollbar-width: none; }
+        .date-pills::-webkit-scrollbar { display: none; }
+        .date-pill { white-space: nowrap; border-radius: 20px; padding: 5px 15px; border: 1px solid #ced4da; color: #495057; text-decoration: none; font-size: 0.9rem; }
+        .date-pill.active { background-color: #212529; color: white; border-color: #212529; }
+        
+        .event-card { margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: none; border-left: 4px solid #198754; }
+        .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="app-header">
-        <h3 class="m-0">🥋 Sparingi BJJ</h3>
+    <div class="app-header shadow-sm">
+        <h4 class="m-0">🥋 Sparingi BJJ</h4>
     </div>
 
-    <div class="container mt-4">
-        
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="m-0">Nadchodzące wydarzenia</h5>
-            <button class="btn btn-primary btn-sm">+ Dodaj slot</button>
+    <div id="map"></div>
+
+    <div class="filter-bar sticky-top">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-12">
+                    <select class="form-select form-select-sm fw-bold">
+                        <option value="wszystkie">Wszystkie miasta</option>
+                        <option value="bielsko" selected>Bielsko-Biała i okolice</option>
+                        <option value="katowice">Katowice / Śląsk</option>
+                    </select>
+                </div>
+            </div>
+            <div class="date-pills">
+                <a href="#" class="date-pill">Dzisiaj</a>
+                <a href="#" class="date-pill active">Jutro</a>
+                <a href="#" class="date-pill">Sobota</a>
+                <a href="#" class="date-pill">Niedziela</a>
+                <a href="#" class="date-pill">Wszystkie</a>
+            </div>
         </div>
+    </div>
+
+    <div class="container mt-3">
+        <h6 class="text-muted mb-3">Wydarzenia pasujące do filtrów:</h6>
 
         <div class="card event-card">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <h5 class="card-title text-danger">Open Mat - Bestwinka</h5>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="card-title m-0 fw-bold">Open Mat - Bestwinka</h5>
                     <span class="badge bg-dark">No-Gi</span>
                 </div>
-                <p class="card-text mb-1"><strong>📅 Kiedy:</strong> 15.05.2026, 17:30</p>
-                <p class="card-text mb-1"><strong>👥 Limit:</strong> 2 / 4 osoby</p>
-                <p class="card-text text-muted small">Mocne zadaniówki, kategoria wagowa ok. 85 kg. Minimalny poziom: niebieski pas.</p>
-                <div class="d-grid mt-3">
-                    <button class="btn btn-outline-success">Dołącz do sparingu</button>
+                <p class="card-text mb-1"><small><strong>📍 Miejsce:</strong> Prywatna Mata</small></p>
+                <p class="card-text mb-1"><small><strong>📅 Kiedy:</strong> Jutro, 17:30</small></p>
+                <p class="card-text mb-2"><small><strong>👥 Limit:</strong> 2 / 4 osoby</small></p>
+                <div class="d-grid mt-2">
+                    <button class="btn btn-outline-success btn-sm">Dołącz do wydarzenia</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card event-card" style="border-left-color: #0dcaf0;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="card-title m-0 fw-bold">Zadaniówki przed MP</h5>
+                    <span class="badge bg-primary">Gi</span>
+                </div>
+                <p class="card-text mb-1"><small><strong>📍 Miejsce:</strong> Bastion Bielsko-Biała</small></p>
+                <p class="card-text mb-1"><small><strong>📅 Kiedy:</strong> Jutro, 19:00</small></p>
+                <p class="card-text mb-2"><small><strong>👥 Limit:</strong> 12 / 20 osób</small></p>
+                <div class="d-grid mt-2">
+                    <button class="btn btn-outline-info btn-sm">Dołącz do wydarzenia</button>
                 </div>
             </div>
         </div>
 
     </div>
 
+    <button class="btn btn-primary fab-button">+ Dodaj wydarzenie</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Inicjalizacja darmowej mapy - ustawiamy centrum na rejon Podbeskidzia (np. Bielsko/Bestwinka)
+        var map = L.map('map').setView([49.8225, 19.0444], 11);
+
+        // Dodanie warstwy graficznej z OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Przykładowe pinezki z klubami/miejscami
+        L.marker([49.888, 19.030]).addTo(map).bindPopup('<b>Prywatna Mata</b><br>Bestwinka');
+        L.marker([49.822, 19.044]).addTo(map).bindPopup('<b>Bastion</b><br>Bielsko-Biała');
+    </script>
 </body>
 </html>
