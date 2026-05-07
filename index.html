@@ -3,26 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wolna Mata - System Sparingowy</title>
+    <title>Wolna Mata - Kalendarz Sparingowy</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
     <style>
         body { background-color: #f8f9fa; font-family: -apple-system, sans-serif; padding-bottom: 80px; color: #333; }
         .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; position: relative; }
-        #map { height: 180px; width: 100%; border-bottom: 2px solid #dee2e6; z-index: 1; }
+        .view-toggle { background: white; border-bottom: 1px solid #dee2e6; padding: 10px 0; }
+        
         .event-card { margin-bottom: 15px; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; overflow: hidden; background: white; }
         .participant-tag { border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: inline-block; margin: 4px 2px; background: white; border: 1px solid #dee2e6; font-weight: 500; }
         
+        /* Kolory pasów */
         .belt-white { border-left: 5px solid #f0f0f0; }
         .belt-blue { border-left: 5px solid #0d6efd; color: #0d6efd; }
         .belt-purple { border-left: 5px solid #6f42c1; color: #6f42c1; }
         .belt-brown { border-left: 5px solid #795548; color: #795548; }
         .belt-black { border-left: 5px solid #212529; color: #212529; }
         
-        .event-title-link { cursor: pointer; color: #212529; text-decoration: none; }
+        .event-title-link { cursor: pointer; color: #212529; text-decoration: none; font-weight: bold; }
         .event-title-link:hover { color: #0d6efd; }
+        
+        #calendar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .fc-event { cursor: pointer; }
         
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
@@ -30,8 +35,7 @@
         .delete-event-btn { position: absolute; top: 10px; right: 10px; color: #dc3545; cursor: pointer; background: #fff5f5; border-radius: 50%; width: 30px; height: 30px; border: 1px solid #ffebeb; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .note-text { font-style: italic; font-size: 0.85rem; color: #666; background: #fdfdfe; padding: 5px 10px; border-left: 3px solid #0d6efd; margin-bottom: 10px; }
         
-        .modal-list-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
-        .modal-list-item:last-child { border-bottom: none; }
+        .modal-list-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
     </style>
 </head>
 <body>
@@ -46,47 +50,60 @@
         </div>
     </div>
 
-    <div class="app-header shadow-sm">
+    <div class="app-header">
         <div id="openProfile" class="profile-btn small text-secondary">👤 Profil</div>
-        <h4 class="m-0">🥋 Sparingi BJJ</h4>
-        <div id="userInfo" class="small text-muted" style="font-size: 0.7rem;"></div>
+        <h4 class="m-0 fw-bold">WOLNA MATA</h4>
     </div>
 
-    <div id="map"></div>
-    <div class="container mt-3"><div id="events-list"></div></div>
+    <div class="view-toggle">
+        <div class="container d-flex justify-content-center gap-2">
+            <button id="btnListView" class="btn btn-dark btn-sm px-4">Lista</button>
+            <button id="btnCalendarView" class="btn btn-outline-dark btn-sm px-4">Kalendarz</button>
+        </div>
+    </div>
+
+    <div class="container mt-3">
+        <div id="section-list">
+            <div id="events-list"></div>
+        </div>
+
+        <div id="section-calendar" style="display: none;">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
     <button class="btn btn-primary fab-button" data-bs-toggle="modal" data-bs-target="#addEventModal">+ Nowa Mata</button>
 
     <div class="modal fade" id="participantsModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="modalEventName">Lista zawodników</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body p-0" id="modalParticipantsList">
-            </div>
+          <div class="modal-body p-0" id="modalParticipantsList"></div>
         </div>
       </div>
     </div>
 
     <div class="modal fade" id="profileModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header border-0"><h5 class="modal-title fw-bold">Twój Profil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body">
-            <form id="profileForm">
-              <input type="text" id="profName" class="form-control mb-2" placeholder="Imię / Nick" required>
-              <select id="profBelt" class="form-select mb-2">
-                <option value="white">Biały pas</option><option value="blue">Niebieski pas</option><option value="purple">Purpurowy pas</option><option value="brown">Brązowy pas</option><option value="black">Czarny pas</option>
-              </select>
-              <select id="profStyle" class="form-select mb-2">
-                <option value="GI">GI</option><option value="NoGi">NoGi</option><option value="GI+NoGi">GI + NoGi</option>
-              </select>
-              <input type="number" id="profWeight" class="form-control mb-4" placeholder="Waga (kg)">
-              <button type="submit" class="btn btn-dark w-100">Zapisz</button>
-            </form>
-            <hr><button onclick="window.handleLogout()" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header border-0"><h5 class="modal-title fw-bold">Twój Profil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+              <form id="profileForm">
+                <input type="text" id="profName" class="form-control mb-2" placeholder="Imię / Nick" required>
+                <select id="profBelt" class="form-select mb-2">
+                  <option value="white">Biały pas</option><option value="blue">Niebieski pas</option><option value="purple">Purpurowy pas</option><option value="brown">Brązowy pas</option><option value="black">Czarny pas</option>
+                </select>
+                <select id="profStyle" class="form-select mb-2">
+                  <option value="GI">GI</option><option value="NoGi">NoGi</option><option value="GI+NoGi">GI + NoGi</option>
+                </select>
+                <input type="number" id="profWeight" class="form-control mb-4" placeholder="Waga (kg)">
+                <button type="submit" class="btn btn-dark w-100">Zapisz</button>
+              </form>
+              <hr><button onclick="window.handleLogout()" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
     <div class="modal fade" id="addEventModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
@@ -106,7 +123,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -128,7 +145,7 @@
 
         let currentUser = null;
         let userProfile = {};
-        let markersLayer = L.layerGroup();
+        let calendar = null;
         const beltRank = { "black": 4, "brown": 3, "purple": 2, "blue": 1, "white": 0 };
 
         onAuthStateChanged(auth, async (user) => {
@@ -136,39 +153,73 @@
                 currentUser = user;
                 document.getElementById('authOverlay').style.display = 'none';
                 await loadUserProfile();
+                initCalendar();
                 loadEvents();
             } else {
                 document.getElementById('authOverlay').style.display = 'flex';
             }
         });
 
+        // PRZEŁĄCZANIE WIDOKÓW
+        document.getElementById('btnListView').addEventListener('click', () => {
+            document.getElementById('section-list').style.display = 'block';
+            document.getElementById('section-calendar').style.display = 'none';
+            document.getElementById('btnListView').className = 'btn btn-dark btn-sm px-4';
+            document.getElementById('btnCalendarView').className = 'btn btn-outline-dark btn-sm px-4';
+        });
+
+        document.getElementById('btnCalendarView').addEventListener('click', () => {
+            document.getElementById('section-list').style.display = 'none';
+            document.getElementById('section-calendar').style.display = 'block';
+            document.getElementById('btnListView').className = 'btn btn-outline-dark btn-sm px-4';
+            document.getElementById('btnCalendarView').className = 'btn btn-dark btn-sm px-4';
+            calendar.render(); // Ważne: renderuj po pokazaniu diva
+        });
+
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pl',
+                headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+                firstDay: 1,
+                eventClick: (info) => {
+                    window.openParticipants(info.event.id, info.event.title);
+                }
+            });
+            calendar.render();
+        }
+
         async function loadUserProfile() {
             const snap = await getDoc(doc(db, "users", currentUser.uid));
             if (snap.exists()) userProfile = snap.data();
-            document.getElementById('userInfo').innerText = `Zalogowany: ${userProfile.name || currentUser.email}`;
         }
-
-        var map = L.map('map').setView([49.8225, 19.0444], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        markersLayer.addTo(map);
 
         function loadEvents() {
             const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('events-list');
                 list.innerHTML = '';
+                calendar.removeAllEvents();
+
                 snapshot.forEach((docSnap) => {
                     const ev = docSnap.data();
                     const id = docSnap.id;
                     const participants = ev.participants || [];
                     const myEntry = participants.find(p => p.uid === currentUser.uid);
 
-                    // Sortowanie uczestników do tagów (podgląd)
-                    const sortedParticipants = [...participants].sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
+                    // Dodaj do kalendarza
+                    calendar.addEvent({
+                        id: id,
+                        title: ev.name,
+                        start: ev.date,
+                        backgroundColor: participants.length > 0 ? '#212529' : '#6c757d',
+                        borderColor: '#212529'
+                    });
 
-                    let partHtml = sortedParticipants.map(p => 
-                        `<span class="participant-tag belt-${p.belt}">${p.name}</span>`
-                    ).join('');
+                    // Renderuj kartę listy
+                    const sortedParticipants = [...participants].sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
+                    let partHtml = sortedParticipants.map(p => `<span class="participant-tag belt-${p.belt}">${p.name}</span>`).join('');
 
                     list.innerHTML += `
                         <div class="card event-card mb-3">
@@ -181,7 +232,7 @@
                                 <div class="row g-2">
                                     <div class="col-9">
                                         ${myEntry 
-                                            ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}','${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', '${ev.name.replace(/'/g, "\\'")}', '${ev.location}', '${ev.date}')">Wypisz się</button>`
+                                            ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}','${JSON.stringify(myEntry).replace(/"/g, '&quot;')}')">Wypisz się</button>`
                                             : `<button class="btn btn-dark btn-sm w-100" onclick="window.joinEvent('${id}')">Dołącz do maty</button>`
                                         }
                                     </div>
@@ -197,45 +248,29 @@
             const docSnap = await getDoc(doc(db, 'events', eventId));
             if (!docSnap.exists()) return;
             const participants = docSnap.data().participants || [];
-            
-            // Logika sortowania pasami
             const sorted = participants.sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
-            
             const modalList = document.getElementById('modalParticipantsList');
             document.getElementById('modalEventName').innerText = eventName;
             modalList.innerHTML = sorted.map(p => `
                 <div class="modal-list-item">
-                    <div class="d-flex align-items: center;">
-                        <div class="participant-tag belt-${p.belt} me-2" style="width: 5px; height: 30px; padding: 0;"></div>
-                        <div>
-                            <div class="fw-bold">${p.name}</div>
-                            <div class="small text-muted">${p.style} | ${p.weight}kg</div>
-                        </div>
+                    <div class="participant-tag belt-${p.belt} me-2" style="width: 5px; height: 30px; padding: 0;"></div>
+                    <div>
+                        <div class="fw-bold">${p.name}</div>
+                        <div class="small text-muted">${p.style} | ${p.weight}kg</div>
                     </div>
                 </div>
             `).join('') || '<div class="p-4 text-center text-muted">Brak zapisanych osób</div>';
-            
             new bootstrap.Modal(document.getElementById('participantsModal')).show();
         };
 
-        // Reszta logiki (join, leave, profile, calendar) pozostaje bez zmian
         window.deleteEvent = async (id) => { if(confirm("Usunąć matę?")) await deleteDoc(doc(db, "events", id)); };
         window.joinEvent = async (id) => {
             if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
             await updateDoc(doc(db, 'events', id), { 
-                participants: arrayUnion({ 
-                    uid: currentUser.uid, 
-                    name: userProfile.name, 
-                    belt: userProfile.belt || 'white', 
-                    weight: userProfile.weight || '?', 
-                    style: userProfile.style || 'GI' 
-                }) 
+                participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style }) 
             });
         };
-        window.leaveEvent = async (id, entry, n, l, d) => {
-            await updateDoc(doc(db, 'events', id), { participants: arrayRemove(JSON.parse(entry)) });
-            // Opcjonalnie: window.manageCalendar(n, l, d, id, true);
-        };
+        window.leaveEvent = async (id, entry) => { await updateDoc(doc(db, 'events', id), { participants: arrayRemove(JSON.parse(entry)) }); };
         window.handleCal = (n,l,d,id) => {
             const start = new Date(d).toISOString().replace(/-|:|\.\d+/g, "");
             const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:🥋 BJJ: ${n}\nDTSTART:${start}\nLOCATION:${l}\nEND:VEVENT\nEND:VCALENDAR`;
@@ -250,7 +285,6 @@
             await setDoc(doc(db, "users", currentUser.uid), up);
             userProfile = up;
             bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
-            loadUserProfile();
         });
         document.getElementById('addEventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -263,8 +297,12 @@
         });
         document.getElementById('openProfile').addEventListener('click', () => new bootstrap.Modal(document.getElementById('profileModal')).show());
         window.handleLogout = () => signOut(auth);
-        document.getElementById('loginEmailBtn').addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd logowania")));
-        document.getElementById('registerEmailBtn').addEventListener('click', () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd rejestracji")));
+        document.getElementById('loginEmailBtn').addEventListener('click', () => {
+            signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd logowania"));
+        });
+        document.getElementById('registerEmailBtn').addEventListener('click', () => {
+            createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd rejestracji"));
+        });
     </script>
 </body>
 </html>
