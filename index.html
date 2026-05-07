@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sparingi BJJ - Znajdź partnera na matę</title>
+    <title>Sparingi BJJ - Wolna Mata</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,7 +15,7 @@
         .filter-bar { background-color: white; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .date-pills { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; scrollbar-width: none; }
         .date-pills::-webkit-scrollbar { display: none; }
-        .date-pill { white-space: nowrap; border-radius: 20px; padding: 5px 15px; border: 1px solid #ced4da; color: #495057; text-decoration: none; font-size: 0.9rem; }
+        .date-pill { white-space: nowrap; border-radius: 20px; padding: 5px 15px; border: 1px solid #ced4da; color: #495057; text-decoration: none; font-size: 0.9rem; cursor: pointer; }
         .date-pill.active { background-color: #212529; color: white; border-color: #212529; }
         .event-card { margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: none; border-left: 4px solid #198754; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
@@ -33,16 +33,17 @@
         <div class="container">
             <div class="row mb-2">
                 <div class="col-12">
-                    <select class="form-select form-select-sm fw-bold">
-                        <option value="wszystkie">Wszystkie miasta</option>
+                    <select id="cityFilter" class="form-select form-select-sm fw-bold">
+                        <option value="wszystkie">Wszystkie regiony</option>
                         <option value="bielsko" selected>Bielsko-Biała i okolice</option>
+                        <option value="katowice">Katowice / Śląsk</option>
                     </select>
                 </div>
             </div>
-            <div class="date-pills">
-                <a href="#" class="date-pill">Dzisiaj</a>
-                <a href="#" class="date-pill active">Jutro</a>
-                <a href="#" class="date-pill">Wszystkie</a>
+            <div class="date-pills" id="dateFilters">
+                <div class="date-pill active" data-filter="wszystkie">Wszystkie</div>
+                <div class="date-pill" data-filter="dzisiaj">Dzisiaj</div>
+                <div class="date-pill" data-filter="jutro">Jutro</div>
             </div>
         </div>
     </div>
@@ -70,7 +71,7 @@
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted small">Miejsce (Klub)</label>
-                <input type="text" id="eventLocation" class="form-control" placeholder="np. Bastion Bielsko" required>
+                <input type="text" id="eventLocation" class="form-control" placeholder="np. Academia Gorila Bielsko" required>
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted small">Data i godzina</label>
@@ -78,7 +79,7 @@
               </div>
               <div class="mb-3">
                 <label class="form-label text-muted small">Limit osób na macie</label>
-                <input type="number" id="eventLimit" class="form-control" placeholder="np. 10 (zostaw puste jeśli brak)">
+                <input type="number" id="eventLimit" class="form-control" placeholder="Zostaw puste = brak limitu">
               </div>
               <button type="submit" class="btn btn-dark w-100 mt-2">Wrzuć na tablicę</button>
             </form>
@@ -92,9 +93,8 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Twój unikalny klucz
         const firebaseConfig = {
             apiKey: "AIzaSyAq8-Y_1i609lZE8d3aZMIZI5C33f25OmU",
             authDomain: "openmat-62496.firebaseapp.com",
@@ -107,46 +107,122 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Inicjalizacja Mapy
-        var map = L.map('map').setView([49.8225, 19.0444], 11);
+        // MAPA I PINEZKI
+        var map = L.map('map').setView([49.8225, 19.0444], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        let markersLayer = L.layerGroup().addTo(map);
 
-        // Nasłuchiwanie na nowe wydarzenia z bazy (Real-time)
-        const eventsList = document.getElementById('events-list');
-        const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-        
-        onSnapshot(q, (snapshot) => {
-            eventsList.innerHTML = ''; // Czyścimy listę "Ładowanie maty"
-            
-            if (snapshot.empty) {
-                eventsList.innerHTML = '<p class="text-center text-muted mt-4">Brak zaplanowanych sparingów. Bądź pierwszy!</p>';
-                return;
-            }
+        // Wewnętrzny "słownik" znanych lokalizacji - nadaje współrzędne na podstawie słów kluczowych
+        function getCoordsForLocation(locName) {
+            const name = locName.toLowerCase();
+            if(name.includes('bastion')) return [49.822, 19.044];
+            if(name.includes('gorila')) return [49.828, 19.048];
+            if(name.includes('bestwin')) return [49.888, 19.030];
+            if(name.includes('katowic') || name.includes('silesia')) return [50.264, 19.023];
+            if(name.includes('tychy')) return [50.124, 18.986];
+            return [49.822, 19.044]; // Domyślnie środek Bielska
+        }
 
-            snapshot.forEach((doc) => {
-                const event = doc.data();
-                const limitText = event.limit ? `${event.limit} osób` : 'Brak limitu';
-                const dateText = event.date.replace('T', ', ');
+        // STAN APLIKACJI
+        let allEvents = [];
+        let currentCity = 'bielsko';
+        let currentDay = 'wszystkie';
 
-                eventsList.innerHTML += `
-                    <div class="card event-card">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">${event.name}</h5>
-                            <p class="card-text mb-1"><small><strong>📍 Miejsce:</strong> ${event.location}</small></p>
-                            <p class="card-text mb-1"><small><strong>📅 Kiedy:</strong> ${dateText}</small></p>
-                            <p class="card-text mb-2"><small><strong>👥 Limit:</strong> ${limitText}</small></p>
-                            <div class="d-grid mt-2">
-                                <button class="btn btn-outline-success btn-sm">Dołącz do wydarzenia</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+        // OBSŁUGA FILTRÓW
+        document.getElementById('cityFilter').addEventListener('change', (e) => {
+            currentCity = e.target.value;
+            renderEvents();
         });
 
-        // Obsługa wysyłania formularza do bazy
-        const addEventForm = document.getElementById('addEventForm');
-        addEventForm.addEventListener('submit', async (e) => {
+        document.getElementById('dateFilters').addEventListener('click', (e) => {
+            if(e.target.classList.contains('date-pill')) {
+                document.querySelectorAll('.date-pill').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                currentDay = e.target.getAttribute('data-filter');
+                renderEvents();
+            }
+        });
+
+        // RENDEROWANIE WIDOKU (Lista + Mapa)
+        function renderEvents() {
+            const eventsList = document.getElementById('events-list');
+            eventsList.innerHTML = '';
+            markersLayer.clearLayers(); // Czyści starą mapę
+
+            // Daty do filtrowania
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const todayStr = today.toISOString().split('T')[0];
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+            let visibleEvents = 0;
+
+            allEvents.forEach((event) => {
+                const eventDateStr = event.date.split('T')[0];
+                const locLower = event.location.toLowerCase();
+
+                // Logika filtra daty
+                let dateMatch = false;
+                if (currentDay === 'wszystkie') dateMatch = true;
+                else if (currentDay === 'dzisiaj' && eventDateStr === todayStr) dateMatch = true;
+                else if (currentDay === 'jutro' && eventDateStr === tomorrowStr) dateMatch = true;
+
+                // Logika filtra miasta
+                let cityMatch = false;
+                if (currentCity === 'wszystkie') cityMatch = true;
+                else if (currentCity === 'bielsko' && (locLower.includes('bielsk') || locLower.includes('bastion') || locLower.includes('goril') || locLower.includes('bestwin'))) cityMatch = true;
+                else if (currentCity === 'katowice' && (locLower.includes('katowic') || locLower.includes('tychy') || locLower.includes('silesia'))) cityMatch = true;
+
+                if (dateMatch && cityMatch) {
+                    visibleEvents++;
+                    
+                    // Rysuj pinezkę na mapie
+                    const coords = getCoordsForLocation(event.location);
+                    L.marker(coords).addTo(markersLayer).bindPopup(`<b>${event.name}</b><br>${event.location}`);
+
+                    // Generuj kartę
+                    const limitVal = parseInt(event.limit);
+                    let limitText = isNaN(limitVal) ? 'Brak limitu' : `${limitVal} wolnych miejsc`;
+                    let btnDisabled = (limitVal === 0) ? 'disabled' : '';
+                    let btnText = (limitVal === 0) ? 'Brak miejsc' : 'Dołącz do wydarzenia';
+                    let btnClass = (limitVal === 0) ? 'btn-secondary' : 'btn-outline-success join-btn';
+                    
+                    const dateText = event.date.replace('T', ', ');
+
+                    eventsList.innerHTML += `
+                        <div class="card event-card">
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold">${event.name}</h5>
+                                <p class="card-text mb-1"><small><strong>📍 Miejsce:</strong> ${event.location}</small></p>
+                                <p class="card-text mb-1"><small><strong>📅 Kiedy:</strong> ${dateText}</small></p>
+                                <p class="card-text mb-2"><small><strong>👥 Dostępność:</strong> ${limitText}</small></p>
+                                <div class="d-grid mt-2">
+                                    <button class="btn ${btnClass} btn-sm" data-id="${event.id}" data-limit="${event.limit}">${btnText}</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (visibleEvents === 0) {
+                eventsList.innerHTML = '<p class="text-center text-muted mt-4">Brak maty spełniającej kryteria. Zmień filtry!</p>';
+            }
+        }
+
+        // POBIERANIE Z BAZY (Real-time)
+        const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (snapshot) => {
+            allEvents = [];
+            snapshot.forEach((doc) => {
+                allEvents.push({ id: doc.id, ...doc.data() });
+            });
+            renderEvents();
+        });
+
+        // DODAWANIE DO BAZY
+        document.getElementById('addEventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.innerText = "Trwa zapisywanie...";
@@ -160,15 +236,34 @@
                     limit: document.getElementById('eventLimit').value,
                     createdAt: new Date()
                 });
-                // Zamknij okienko i wyczyść formularz po sukcesie
                 bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
-                addEventForm.reset();
+                e.target.reset();
             } catch (error) {
-                console.error("Błąd bazy danych: ", error);
-                alert("Nie udało się dodać wydarzenia. Upewnij się, że włączyłeś bazę Firestore w trybie Test Mode.");
+                alert("Błąd: " + error.message);
             } finally {
                 submitBtn.innerText = "Wrzuć na tablicę";
                 submitBtn.disabled = false;
+            }
+        });
+
+        // DOŁĄCZANIE (Aktualizacja limitu)
+        document.getElementById('events-list').addEventListener('click', async (e) => {
+            if(e.target.classList.contains('join-btn')) {
+                const id = e.target.getAttribute('data-id');
+                let currentLimit = e.target.getAttribute('data-limit');
+                
+                if(!currentLimit || isNaN(parseInt(currentLimit))) {
+                    alert("Dołączyłeś! (Wydarzenie bez limitu miejsc)");
+                    return;
+                }
+
+                let limitNum = parseInt(currentLimit);
+                if(limitNum > 0) {
+                    e.target.disabled = true;
+                    e.target.innerText = "Zapisywanie...";
+                    const eventRef = doc(db, 'events', id);
+                    await updateDoc(eventRef, { limit: (limitNum - 1).toString() });
+                }
             }
         });
     </script>
