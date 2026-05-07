@@ -13,19 +13,15 @@
         body { background-color: #f8f9fa; font-family: 'Lato', sans-serif; padding-bottom: 80px; color: #333; }
         .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; position: relative; }
         .view-toggle { background: white; border-bottom: 1px solid #dee2e6; padding: 10px 0; }
-        
         .event-card { margin-bottom: 15px; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; overflow: hidden; background: white; }
         .participant-tag { border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: inline-block; margin: 4px 2px; background: white; border: 1px solid #dee2e6; font-weight: 500; }
-        
         .belt-white { border-left: 5px solid #f0f0f0; }
         .belt-blue { border-left: 5px solid #0d6efd; color: #0d6efd; }
         .belt-purple { border-left: 5px solid #6f42c1; color: #6f42c1; }
         .belt-brown { border-left: 5px solid #795548; color: #795548; }
         .belt-black { border-left: 5px solid #212529; color: #212529; }
-        
         .event-title-link { cursor: pointer; color: #212529; text-decoration: none; font-weight: bold; }
         #calendar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; min-height: 400px; }
-        
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
         .profile-btn { position: absolute; left: 15px; top: 15px; cursor: pointer; }
@@ -95,11 +91,11 @@
                 <input type="number" id="profWeight" class="form-control mb-4" placeholder="Waga (kg)">
                 <button type="submit" class="btn btn-dark w-100">Zapisz profil</button>
               </form>
-              <hr><button onclick="window.handleLogout()" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
+              <hr><button id="logoutBtn" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
             </div>
           </div>
         </div>
-      </div>
+    </div>
 
     <div class="modal fade" id="addEventModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
@@ -152,6 +148,7 @@
                 if (!calendar) initCalendar();
                 loadEvents();
             } else {
+                currentUser = null;
                 document.getElementById('authOverlay').style.display = 'flex';
             }
         });
@@ -171,7 +168,10 @@
         async function loadUserProfile() {
             const snap = await getDoc(doc(db, "users", currentUser.uid));
             if (snap.exists()) userProfile = snap.data();
-            document.getElementById('userInfo').innerText = `Matę grzeje: ${userProfile.name || currentUser.email}`;
+            document.getElementById('profName').value = userProfile.name || '';
+            document.getElementById('profBelt').value = userProfile.belt || 'white';
+            document.getElementById('profWeight').value = userProfile.weight || '';
+            document.getElementById('profStyle').value = userProfile.style || 'GI';
         }
 
         function loadEvents() {
@@ -200,28 +200,30 @@
                     list.innerHTML += `
                         <div class="card event-card mb-3">
                             <div class="card-body">
-                                ${ev.creatorId === currentUser.uid ? `<button class="delete-event-btn" onclick="window.deleteEvent('${id}')">🗑️</button>` : ''}
-                                <h5 class="fw-bold mb-1"><span class="event-title-link" onclick="window.openParticipants('${id}', '${(ev.name || 'Mata').replace(/'/g, "\\'")}')">${ev.name || 'Mata'}</span></h5>
+                                ${ev.creatorId === currentUser.uid ? `<button class="btn-delete" data-id="${id}">🗑️</button>` : ''}
+                                <h5 class="fw-bold mb-1"><span class="event-title-link" data-id="${id}" data-name="${(ev.name || 'Mata').replace(/'/g, "\\'")}">${ev.name || 'Mata'}</span></h5>
                                 <p class="small text-muted mb-2">📍 ${ev.location} | 📅 ${ev.date.replace('T', ' ')}</p>
                                 ${ev.note ? `<div class="note-text">"${ev.note}"</div>` : ''}
                                 <div class="mb-3">${partHtml || '<span class="text-muted small">Brak zapisów</span>'}</div>
                                 <div class="row g-2">
                                     <div class="col-9">
-                                        ${myEntry ? `<button class="btn btn-outline-danger btn-sm w-100" onclick="window.leaveEvent('${id}','${JSON.stringify(myEntry).replace(/"/g, '&quot;')}')">Wypisz się</button>`
-                                        : `<button class="btn btn-dark btn-sm w-100" onclick="window.joinEvent('${id}')">Dołącz do maty</button>`}
+                                        <button class="btn btn-action btn-sm w-100 ${myEntry ? 'btn-outline-danger' : 'btn-dark'}" data-id="${id}" data-entry='${JSON.stringify(myEntry || {})}'>
+                                            ${myEntry ? 'Wypisz się' : 'Dołącz do maty'}
+                                        </button>
                                     </div>
-                                    <div class="col-3"><button class="btn btn-outline-primary btn-sm w-100" onclick="window.handleCal('${ev.name}','${ev.location}','${ev.date}','${id}')">📅</button></div>
+                                    <div class="col-3"><button class="btn btn-cal btn-outline-primary btn-sm w-100" data-n="${ev.name}" data-l="${ev.location}" data-d="${ev.date}">📅</button></div>
                                 </div>
                             </div>
                         </div>`;
                 });
+                attachListeners();
             });
         }
 
+        // PRZYPISANIE FUNKCJI DO WINDOW DLA WYWOŁAŃ Z DYNAMICZNEGO HTML
         window.openParticipants = async (eventId, eventName) => {
             const docSnap = await getDoc(doc(db, 'events', eventId));
-            if (!docSnap.exists()) return;
-            const participants = docSnap.data().participants || [];
+            const participants = docSnap.exists() ? (docSnap.data().participants || []) : [];
             const sorted = participants.sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
             const myEntry = participants.find(p => p.uid === currentUser.uid);
             
@@ -233,31 +235,93 @@
                 </div>`).join('') || '<div class="p-4 text-center text-muted">Brak zapisów.</div>';
 
             const actionArea = document.getElementById('modalActionArea');
-            if (myEntry) {
-                actionArea.innerHTML = `<button class="btn btn-outline-danger w-100" onclick="window.leaveEvent('${eventId}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}'); bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();">Wypisz się</button>`;
-            } else {
-                actionArea.innerHTML = `<button class="btn btn-dark w-100" onclick="window.joinEvent('${eventId}'); bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();">Dołącz do maty</button>`;
-            }
+            const btnClass = myEntry ? 'btn-outline-danger' : 'btn-dark';
+            const btnText = myEntry ? 'Wypisz się' : 'Dołącz do maty';
+            
+            actionArea.innerHTML = `<button class="btn ${btnClass} w-100" id="modalMainAction">${btnText}</button>`;
+            
+            document.getElementById('modalMainAction').onclick = async () => {
+                if (myEntry) await updateDoc(doc(db, 'events', eventId), { participants: arrayRemove(myEntry) });
+                else await window.joinEvent(eventId);
+                bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();
+            };
+            
             new bootstrap.Modal(document.getElementById('participantsModal')).show();
         };
 
-        window.deleteEvent = async (id) => { if(confirm("Usunąć matę?")) await deleteDoc(doc(db, "events", id)); };
         window.joinEvent = async (id) => {
             if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
-            await updateDoc(doc(db, 'events', id), { participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style }) });
+            await updateDoc(doc(db, 'events', id), { 
+                participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style }) 
+            });
         };
-        window.leaveEvent = async (id, entry) => { await updateDoc(doc(db, 'events', id), { participants: arrayRemove(JSON.parse(entry)) }); };
-        window.handleCal = (n,l,d,id) => {
-            const start = new Date(d).toISOString().replace(/-|:|\.\d+/g, "");
-            const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:🥋 BJJ: ${n}\nDTSTART:${start}\nLOCATION:${l}\nEND:VEVENT\nEND:VCALENDAR`;
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'}));
-            link.download = 'trening.ics';
-            link.click();
-        };
+
+        function attachListeners() {
+            document.querySelectorAll('.event-title-link').forEach(el => el.onclick = () => window.openParticipants(el.dataset.id, el.dataset.name));
+            document.querySelectorAll('.btn-delete').forEach(el => el.onclick = async () => { if(confirm("Usunąć?")) await deleteDoc(doc(db, "events", el.dataset.id)); });
+            document.querySelectorAll('.btn-action').forEach(el => el.onclick = async () => {
+                const entry = JSON.parse(el.dataset.entry);
+                if (entry.uid) await updateDoc(doc(db, 'events', el.dataset.id), { participants: arrayRemove(entry) });
+                else await window.joinEvent(el.dataset.id);
+            });
+            document.querySelectorAll('.btn-cal').forEach(el => el.onclick = () => {
+                const start = new Date(el.dataset.d).toISOString().replace(/-|:|\.\d+/g, "");
+                const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:🥋 BJJ: ${el.dataset.n}\nDTSTART:${start}\nLOCATION:${el.dataset.l}\nEND:VEVENT\nEND:VCALENDAR`;
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'}));
+                link.download = 'trening.ics';
+                link.click();
+            });
+        }
+
+        // LISTENERY STAŁE
+        document.getElementById('loginEmailBtn').addEventListener('click', () => {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Błąd: " + e.message));
+        });
+
+        document.getElementById('registerEmailBtn').addEventListener('click', () => {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Błąd: " + e.message));
+        });
+
+        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+        document.getElementById('openProfile').onclick = () => new bootstrap.Modal(document.getElementById('profileModal')).show();
 
         document.getElementById('btnListView').onclick = () => {
             document.getElementById('section-list').style.display = 'block';
             document.getElementById('section-calendar').style.display = 'none';
             document.getElementById('btnListView').className = 'btn btn-dark btn-sm px-4';
-            document
+            document.getElementById('btnCalendarView').className = 'btn btn-outline-dark btn-sm px-4';
+        };
+
+        document.getElementById('btnCalendarView').onclick = () => {
+            document.getElementById('section-list').style.display = 'none';
+            document.getElementById('section-calendar').style.display = 'block';
+            document.getElementById('btnListView').className = 'btn btn-outline-dark btn-sm px-4';
+            document.getElementById('btnCalendarView').className = 'btn btn-dark btn-sm px-4';
+            if (calendar) calendar.render();
+        };
+
+        document.getElementById('profileForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const up = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
+            await setDoc(doc(db, "users", currentUser.uid), up);
+            userProfile = up;
+            bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+        };
+
+        document.getElementById('addEventForm').onsubmit = async (e) => {
+            e.preventDefault();
+            await addDoc(collection(db, "events"), {
+                name: document.getElementById('eventName').value, location: document.getElementById('eventLocation').value, note: document.getElementById('eventNote').value, date: document.getElementById('eventDate').value,
+                createdAt: new Date(), participants: [], creatorId: currentUser.uid
+            });
+            bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+            e.target.reset();
+        };
+    </script>
+</body>
+</html>
