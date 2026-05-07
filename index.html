@@ -3,45 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wolna Mata - Społeczność BJJ</title>
+    <title>Wolna Mata - System Sparingowy</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
         body { background-color: #f8f9fa; font-family: sans-serif; padding-bottom: 80px; }
-        .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; }
-        #map { height: 200px; width: 100%; border-bottom: 2px solid #dee2e6; }
-        .event-card { margin-bottom: 15px; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .participant-tag { background: #e9ecef; border-radius: 15px; padding: 2px 10px; font-size: 0.8rem; display: inline-block; margin: 2px; }
+        .app-header { background-color: #212529; color: white; padding: 15px 0; text-align: center; position: relative; }
+        #map { height: 180px; width: 100%; border-bottom: 2px solid #dee2e6; }
+        .event-card { margin-bottom: 15px; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; }
+        
+        /* Style pasów w tagach */
+        .participant-tag { border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; display: inline-block; margin: 4px 2px; background: white; border: 1px solid #dee2e6; font-weight: 500; }
+        .belt-white { border-left: 6px solid #f0f0f0; }
+        .belt-blue { border-left: 6px solid #0d6efd; color: #0d6efd; }
+        .belt-purple { border-left: 6px solid #6f42c1; color: #6f42c1; }
+        .belt-brown { border-left: 6px solid #795548; color: #795548; }
+        .belt-black { border-left: 6px solid #212529; color: #212529; }
+
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; align-items: center; justify-content: center; }
-        .auth-box { width: 100%; max-width: 350px; padding: 20px; }
         .fab-button { position: fixed; bottom: 20px; right: 20px; border-radius: 50px; padding: 15px 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
-        .logout-btn { position: absolute; right: 15px; top: 15px; font-size: 0.8rem; }
+        .profile-btn { position: absolute; left: 15px; top: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="authOverlay" class="auth-overlay">
-        <div class="auth-box text-center">
+        <div class="text-center p-4" style="max-width: 350px;">
             <h2 class="fw-bold mb-3">🥋 Wolna Mata</h2>
-            <p class="text-muted mb-4 small">Zaloguj się lub załóż konto, aby wejść na matę</p>
-            
-            <input type="email" id="emailInput" class="form-control mb-2" placeholder="Twój e-mail">
-            <input type="password" id="passwordInput" class="form-control mb-3" placeholder="Hasło (min. 6 znaków)">
-            
+            <input type="email" id="emailInput" class="form-control mb-2" placeholder="E-mail">
+            <input type="password" id="passwordInput" class="form-control mb-3" placeholder="Hasło">
             <button id="loginEmailBtn" class="btn btn-dark w-100 mb-2">Zaloguj się</button>
-            <button id="registerEmailBtn" class="btn btn-outline-dark w-100 mb-4">Załóż nowe konto</button>
-            
-            <div class="text-muted small mb-3">- LUB -</div>
-            <button id="loginGoogleBtn" class="btn btn-light w-100 border">Szybkie logowanie Google</button>
+            <button id="registerEmailBtn" class="btn btn-outline-dark w-100">Załóż konto</button>
         </div>
     </div>
 
-    <div class="app-header shadow-sm position-relative">
+    <div class="app-header shadow-sm">
+        <div id="openProfile" class="profile-btn small text-secondary">👤 Profil</div>
         <h4 class="m-0">🥋 Sparingi BJJ</h4>
-        <div id="userInfo" class="small mt-1 text-secondary"></div>
-        <button id="logoutBtn" class="btn btn-sm btn-outline-light logout-btn d-none">Wyloguj</button>
+        <div id="userInfo" class="small text-muted" style="font-size: 0.7rem;"></div>
     </div>
 
     <div id="map"></div>
@@ -52,17 +53,46 @@
 
     <button class="btn btn-primary fab-button" data-bs-toggle="modal" data-bs-target="#addEventModal">+ Dodaj matę</button>
 
+    <div class="modal fade" id="profileModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0"><h5 class="modal-title fw-bold">Twój Profil Zawodnika</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <form id="profileForm">
+              <label class="small text-muted">Imię i Nazwisko / Nick</label>
+              <input type="text" id="profName" class="form-control mb-3" required>
+              
+              <label class="small text-muted">Kolor pasa</label>
+              <select id="profBelt" class="form-select mb-3">
+                <option value="white">Biały</option>
+                <option value="blue">Niebieski</option>
+                <option value="purple">Purpurowy</option>
+                <option value="brown">Brązowy</option>
+                <option value="black">Czarny</option>
+              </select>
+
+              <label class="small text-muted">Waga (kg)</label>
+              <input type="number" id="profWeight" class="form-control mb-4" value="85">
+              
+              <button type="submit" class="btn btn-dark w-100">Zapisz zmiany w profilu</button>
+            </form>
+            <hr>
+            <button onclick="window.handleLogout()" class="btn btn-link text-danger w-100 btn-sm">Wyloguj się</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal fade" id="addEventModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header border-0"><h5 class="modal-title fw-bold">Nowy slot sparingowy</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
           <div class="modal-body">
             <form id="addEventForm">
-              <input type="text" id="eventName" class="form-control mb-3" placeholder="Nazwa (np. Open Mat)" required>
-              <input type="text" id="eventLocation" class="form-control mb-3" placeholder="Klub / Miejsce" required>
+              <input type="text" id="eventName" class="form-control mb-2" placeholder="Nazwa (np. Mocne kule)" required>
+              <input type="text" id="eventLocation" class="form-control mb-2" placeholder="Miejsce (np. Bastion)" required>
               <input type="datetime-local" id="eventDate" class="form-control mb-3" required>
-              <input type="number" id="eventLimit" class="form-control mb-3" placeholder="Limit miejsc">
-              <button type="submit" class="btn btn-dark w-100">Opublikuj</button>
+              <button type="submit" class="btn btn-dark w-100">Opublikuj na mapie</button>
             </form>
           </div>
         </div>
@@ -74,8 +104,8 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAq8-Y_1i609lZE8d3aZMIZI5C33f25OmU",
@@ -89,50 +119,36 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
 
         let currentUser = null;
+        let userProfile = { name: '', belt: 'white', weight: 85 };
 
-        // --- OBSŁUGA LOGOWANIA / REJESTRACJI ---
-        const emailInput = document.getElementById('emailInput');
-        const passInput = document.getElementById('passwordInput');
-
-        document.getElementById('registerEmailBtn').addEventListener('click', () => {
-            if(!emailInput.value || passInput.value.length < 6) return alert("Podaj poprawny e-mail i hasło (min. 6 znaków).");
-            createUserWithEmailAndPassword(auth, emailInput.value, passInput.value)
-                .catch(err => alert("Błąd rejestracji: " + err.message));
-        });
-
-        document.getElementById('loginEmailBtn').addEventListener('click', () => {
-            if(!emailInput.value || !passInput.value) return alert("Wprowadź e-mail i hasło.");
-            signInWithEmailAndPassword(auth, emailInput.value, passInput.value)
-                .catch(err => alert("Błąd logowania. Sprawdź dane."));
-        });
-
-        document.getElementById('loginGoogleBtn').addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => alert("Błąd logowania Google: " + err.message));
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        onAuthStateChanged(auth, (user) => {
+        // --- OBSŁUGA AUTH ---
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // Jeśli ktoś loguje się e-mailem, nie ma ustalonego imienia - pobieramy początek maila
-                const displayName = user.displayName || user.email.split('@')[0];
-                
                 document.getElementById('authOverlay').style.display = 'none';
-                document.getElementById('logoutBtn').classList.remove('d-none');
-                document.getElementById('userInfo').innerText = `Zalogowany jako: ${displayName}`;
+                await loadUserProfile();
                 loadEvents();
             } else {
-                currentUser = null;
                 document.getElementById('authOverlay').style.display = 'flex';
-                document.getElementById('logoutBtn').classList.add('d-none');
             }
         });
+
+        async function loadUserProfile() {
+            const docRef = doc(db, "users", currentUser.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                userProfile = docSnap.data();
+            } else {
+                // Jeśli profil nie istnieje, otwórz modal, by użytkownik go wypełnił
+                new bootstrap.Modal(document.getElementById('profileModal')).show();
+            }
+            document.getElementById('profName').value = userProfile.name || '';
+            document.getElementById('profBelt').value = userProfile.belt;
+            document.getElementById('profWeight').value = userProfile.weight;
+            document.getElementById('userInfo').innerText = `Matę grzeje: ${userProfile.name || currentUser.email}`;
+        }
 
         // --- MAPA ---
         var map = L.map('map').setView([49.8225, 19.0444], 11);
@@ -140,7 +156,6 @@
 
         // --- WYDARZENIA ---
         function loadEvents() {
-            if(!currentUser) return;
             const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('events-list');
@@ -152,58 +167,72 @@
                     const isJoined = participants.some(p => p.uid === currentUser.uid);
                     
                     let participantsHtml = participants.map(p => 
-                        `<span class="participant-tag border-start border-3 border-success">${p.name}</span>`
+                        `<span class="participant-tag belt-${p.belt}">${p.name} (${p.weight}kg)</span>`
                     ).join('');
 
                     list.innerHTML += `
-                        <div class="card event-card shadow-sm mb-3">
+                        <div class="card event-card mb-3">
                             <div class="card-body">
                                 <h5 class="fw-bold mb-1">${ev.name}</h5>
                                 <p class="small text-muted mb-2">📍 ${ev.location} | 📅 ${ev.date.replace('T', ' ')}</p>
-                                
-                                <div class="mb-3">
-                                    <label class="small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Zapisani (${participants.length}):</label><br>
-                                    ${participantsHtml || '<span class="text-muted small">Brak zapisów</span>'}
-                                </div>
-
+                                <div class="mb-3">${participantsHtml || '<span class="text-muted small">Czekamy na pierwszych chętnych...</span>'}</div>
                                 <button class="btn ${isJoined ? 'btn-secondary' : 'btn-dark'} btn-sm w-100" 
                                     onclick="window.joinEvent('${id}')" ${isJoined ? 'disabled' : ''}>
                                     ${isJoined ? 'Jesteś na liście' : 'Dołącz do maty'}
                                 </button>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
             });
         }
 
+        // --- AKCJE FORMULARZY ---
         window.joinEvent = async (eventId) => {
-            const userName = currentUser.displayName || currentUser.email.split('@')[0];
+            if(!userProfile.name) return alert("Uzupełnij profil w ustawieniach!");
             const eventRef = doc(db, 'events', eventId);
             await updateDoc(eventRef, {
                 participants: arrayUnion({
                     uid: currentUser.uid,
-                    name: userName,
-                    timestamp: new Date().toISOString()
+                    name: userProfile.name,
+                    belt: userProfile.belt,
+                    weight: userProfile.weight
                 })
             });
         };
 
-        // --- DODAWANIE WYDARZENIA ---
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const updated = {
+                name: document.getElementById('profName').value,
+                belt: document.getElementById('profBelt').value,
+                weight: document.getElementById('profWeight').value
+            };
+            await setDoc(doc(db, "users", currentUser.uid), updated);
+            userProfile = updated;
+            bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+            loadUserProfile();
+        });
+
         document.getElementById('addEventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             await addDoc(collection(db, "events"), {
                 name: document.getElementById('eventName').value,
                 location: document.getElementById('eventLocation').value,
                 date: document.getElementById('eventDate').value,
-                limit: document.getElementById('eventLimit').value,
                 createdAt: new Date(),
-                participants: [],
-                creator: currentUser.uid
+                participants: []
             });
             bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
             e.target.reset();
         });
+
+        // --- UTILS ---
+        document.getElementById('openProfile').addEventListener('click', () => {
+            new bootstrap.Modal(document.getElementById('profileModal')).show();
+        });
+        window.handleLogout = () => signOut(auth);
+        document.getElementById('loginEmailBtn').addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd logowania")));
+        document.getElementById('registerEmailBtn').addEventListener('click', () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert("Błąd rejestracji")));
     </script>
 </body>
 </html>
