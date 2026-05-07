@@ -2,255 +2,189 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wolna Mata - System Sparingowy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wolna Mata - Pro</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
-        :root { --accent: #0d6efd; --dark: #212529; --light: #f8f9fa; }
+        :root { --accent: #0d6efd; --dark: #1a1d20; --glass: rgba(255, 255, 255, 0.9); }
 
         body { 
-            background-color: #f0f2f5; 
+            background-color: #f2f4f7; 
             font-family: 'Lato', sans-serif; 
             padding-bottom: 100px; 
-            color: #333; 
-            overflow-x: hidden;
+            color: #2d3436;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- Animacje --- */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* --- Płynne wejście --- */
+        .animate-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .animate-view { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-
-        /* --- Header --- */
+        /* --- Header Premium --- */
         .app-header { 
-            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
-            color: white; 
-            padding: 20px 0; 
-            text-align: center; 
-            position: relative; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 10;
+            background: var(--dark);
+            background: linear-gradient(135deg, #1a1d20 0%, #000000 100%);
+            color: white; padding: 25px 0; text-align: center; position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
-        /* --- Przełącznik widoku --- */
         .view-toggle { 
-            background: white; 
-            border-bottom: 1px solid #e0e0e0; 
-            padding: 12px 0; 
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: var(--glass); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 0;
+            position: sticky; top: 0; z-index: 100;
         }
 
         .btn-toggle {
-            border-radius: 20px;
-            padding: 8px 25px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            border-radius: 12px; padding: 10px 24px; font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;
         }
 
-        /* --- Karty Wydarzeń --- */
+        /* --- Karty: Glassmorphism --- */
         .event-card { 
-            margin-bottom: 20px; 
-            border: none; 
-            border-radius: 16px; 
-            box-shadow: 0 6px 18px rgba(0,0,0,0.06); 
-            background: white; 
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-            border: 1px solid transparent;
+            background: white; border: none; border-radius: 20px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.04); 
+            margin-bottom: 20px; transition: all 0.4s ease;
+            border: 1px solid rgba(0,0,0,0.02);
         }
 
         .event-card:hover { 
-            transform: translateY(-6px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.1);
-            border-color: rgba(13, 110, 253, 0.2);
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
         }
 
-        .event-title-link { 
-            cursor: pointer; 
-            color: var(--dark); 
-            text-decoration: none; 
-            font-weight: 700;
-            transition: color 0.2s;
-        }
-        
-        .event-title-link:hover { color: var(--accent); }
-
-        /* --- Tagi pasów --- */
         .participant-tag { 
-            border-radius: 8px; 
-            padding: 5px 12px; 
-            font-size: 0.8rem; 
-            display: inline-flex;
-            align-items: center;
-            margin: 4px; 
-            background: #fff; 
-            border: 1px solid #eee; 
-            font-weight: 600; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            border-radius: 10px; padding: 6px 14px; font-size: 0.85rem; 
+            display: inline-flex; align-items: center; margin: 4px; 
+            background: #f8f9fa; border: 1px solid #edf2f7; font-weight: 600;
         }
         
-        .belt-white { border-left: 6px solid #e9ecef; }
+        .belt-white { border-left: 6px solid #dee2e6; }
         .belt-blue { border-left: 6px solid #0d6efd; color: #0d6efd; }
         .belt-purple { border-left: 6px solid #6f42c1; color: #6f42c1; }
         .belt-brown { border-left: 6px solid #795548; color: #795548; }
-        .belt-black { border-left: 6px solid #212529; color: #212529; }
+        .belt-black { border-left: 6px solid #000; color: #000; }
 
-        /* --- Kalendarz --- */
+        /* --- UI Elements --- */
         #calendar { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: none;
+            background: white; padding: 25px; border-radius: 24px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: none;
         }
-        .fc .fc-button-primary { background-color: var(--dark); border: none; font-weight: 700; border-radius: 10px; }
-        .fc .fc-button-primary:hover { background-color: var(--accent); }
 
-        /* --- FAB Button --- */
         .fab-button { 
-            position: fixed; 
-            bottom: 30px; 
-            right: 30px; 
-            border-radius: 30px; 
-            padding: 16px 32px; 
-            box-shadow: 0 8px 25px rgba(13,110,253,0.4); 
-            z-index: 1000; 
-            font-weight: 800;
-            border: none;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-        }
-        
-        .fab-button:hover { 
-            transform: scale(1.05) rotate(-1deg);
-            box-shadow: 0 12px 30px rgba(13,110,253,0.5);
+            position: fixed; bottom: 30px; right: 30px; 
+            border-radius: 20px; padding: 18px 35px; 
+            box-shadow: 0 10px 30px rgba(13,110,253,0.3); z-index: 1000; 
+            font-weight: 900; text-transform: uppercase; border: none;
         }
 
-        /* --- Login Overlay --- */
-        .auth-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #f0f2f5; z-index: 2000; display: flex; 
-            align-items: center; justify-content: center;
-        }
-        .login-card {
-            background: white; padding: 40px; border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 400px;
+        .note-box {
+            background: #f1f6ff; color: #4a5568; padding: 12px 18px;
+            border-radius: 12px; border-left: 4px solid var(--accent);
+            font-size: 0.9rem; font-style: italic; margin: 15px 0;
         }
 
-        .profile-btn { position: absolute; left: 20px; top: 22px; cursor: pointer; opacity: 0.8; transition: 0.2s; }
-        .profile-btn:hover { opacity: 1; transform: scale(1.1); }
-        
-        .note-text { 
-            font-style: italic; font-size: 0.85rem; color: #555; 
-            background: #f8f9ff; padding: 10px 15px; 
-            border-left: 4px solid var(--accent); 
-            border-radius: 4px; margin: 12px 0; 
+        .capacity-badge {
+            font-size: 0.75rem; padding: 4px 10px; border-radius: 20px;
+            background: #e2e8f0; color: #475569; font-weight: 700;
         }
 
-        .btn-close-custom { background: #eee; border-radius: 50%; padding: 5px; }
+        .profile-trigger { position: absolute; left: 25px; top: 25px; cursor: pointer; transition: 0.3s; }
+        .profile-trigger:hover { transform: scale(1.15); color: var(--accent); }
     </style>
 </head>
 <body>
 
-    <div id="authOverlay" class="auth-overlay">
-        <div class="login-card text-center">
-            <div class="mb-4"><i class="fas fa-user-ninja fa-3x text-primary"></i></div>
-            <h2 class="fw-bold mb-2">Wolna Mata</h2>
-            <p class="text-muted small mb-4">Twój klubowy system sparingowy</p>
-            <div class="form-floating mb-2">
-                <input type="email" id="emailInput" class="form-control" placeholder="name@example.com">
-                <label>E-mail</label>
-            </div>
-            <div class="form-floating mb-4">
-                <input type="password" id="passwordInput" class="form-control" placeholder="Hasło">
-                <label>Hasło</label>
-            </div>
-            <button id="loginEmailBtn" class="btn btn-dark w-100 mb-2 py-3 fw-bold">ZALOGUJ SIĘ</button>
-            <button id="registerEmailBtn" class="btn btn-outline-dark w-100 py-2 border-0">Załóż nowe konto</button>
+    <div id="authOverlay" class="auth-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f2f4f7; z-index:2000; display:none; align-items:center; justify-content:center;">
+        <div class="card border-0 shadow-lg p-5 text-center" style="border-radius: 30px; max-width: 400px; width: 90%;">
+            <div class="mb-4"><i class="fas fa-skating fa-3x text-primary"></i></div>
+            <h3 class="fw-black mb-1">Wolna Mata</h3>
+            <p class="text-muted mb-4 small">Zaloguj się, by wejść do gry</p>
+            <input type="email" id="emailInput" class="form-control mb-2 py-3 border-0 bg-light" placeholder="E-mail">
+            <input type="password" id="passwordInput" class="form-control mb-4 py-3 border-0 bg-light" placeholder="Hasło">
+            <button id="loginEmailBtn" class="btn btn-dark w-100 py-3 fw-bold rounded-4 mb-2">WEJDŹ</button>
+            <button id="registerEmailBtn" class="btn btn-link text-muted text-decoration-none small">Załóż konto</button>
         </div>
     </div>
 
     <div class="app-header">
-        <div id="openProfile" class="profile-btn"><i class="fas fa-user-circle fa-lg text-white"></i></div>
-        <h4 class="m-0 fw-bold"><i class="fas fa-handshake-alt me-2"></i>WOLNA MATA</h4>
+        <div id="openProfile" class="profile-trigger"><i class="fas fa-user-circle fa-2x"></i></div>
+        <h4 class="m-0 fw-900">WOLNA MATA</h4>
     </div>
 
     <div class="view-toggle">
         <div class="container d-flex justify-content-center gap-3">
-            <button id="btnListView" class="btn btn-toggle btn-outline-dark"><i class="fas fa-list-ul me-2"></i>Lista</button>
+            <button id="btnListView" class="btn btn-toggle btn-outline-dark"><i class="fas fa-th-list me-2"></i>Lista</button>
             <button id="btnCalendarView" class="btn btn-toggle btn-dark"><i class="fas fa-calendar-alt me-2"></i>Kalendarz</button>
         </div>
     </div>
 
-    <div class="container mt-4">
-        <div id="section-list" class="animate-view" style="display: none;">
+    <div class="container mt-4 pb-5">
+        <div id="section-list" class="animate-in" style="display: none;">
             <div id="events-list"></div>
         </div>
-        <div id="section-calendar" class="animate-view">
+        <div id="section-calendar" class="animate-in">
             <div id="calendar"></div>
         </div>
     </div>
 
     <button class="btn btn-primary fab-button" data-bs-toggle="modal" data-bs-target="#addEventModal">
-        <i class="fas fa-plus me-2"></i>NOWA MATA
+        <i class="fas fa-plus me-2"></i>Nowa Mata
     </button>
 
     <div class="modal fade" id="participantsModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 24px; border: none; overflow: hidden;">
-          <div class="modal-header border-0 bg-light"><h5 class="modal-title fw-bold" id="modalEventName">Kto kuli?</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-content shadow-lg border-0" style="border-radius: 25px;">
+          <div class="modal-header border-0 bg-light px-4 py-3"><h5 class="fw-bold m-0" id="modalEventName">Lista</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
           <div class="modal-body p-0" id="modalParticipantsList"></div>
-          <div class="p-4 bg-light text-center" id="modalActionArea"></div>
+          <div class="p-4 text-center" id="modalActionArea"></div>
         </div>
       </div>
     </div>
 
     <div class="modal fade" id="profileModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header border-0"><h5 class="modal-title fw-bold">Twój Profil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-              <form id="profileForm">
-                <input type="text" id="profName" class="form-control mb-3 py-2" placeholder="Imię / Nick" required>
-                <div class="row g-2 mb-3">
-                    <div class="col-6"><select id="profBelt" class="form-select py-2"><option value="white">Biały pas</option><option value="blue">Niebieski pas</option><option value="purple">Purpurowy pas</option><option value="brown">Brązowy pas</option><option value="black">Czarny pas</option></select></div>
-                    <div class="col-6"><select id="profStyle" class="form-select py-2"><option value="GI">GI</option><option value="NoGi">NoGi</option><option value="GI+NoGi">Mix</option></select></div>
-                </div>
-                <input type="number" id="profWeight" class="form-control mb-4 py-2" placeholder="Waga (kg)">
-                <button type="submit" class="btn btn-dark w-100 py-3 fw-bold">ZAPISZ PROFIL</button>
-              </form>
-              <hr><button id="logoutBtn" class="btn btn-link text-danger w-100 text-decoration-none">Wyloguj się</button>
-            </div>
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 25px;">
+          <div class="modal-body p-4">
+            <h5 class="fw-bold mb-4">Twój Profil</h5>
+            <form id="profileForm">
+              <input type="text" id="profName" class="form-control mb-3 py-3 border-0 bg-light" placeholder="Imię / Nick" required>
+              <div class="row g-2 mb-3">
+                  <div class="col-6"><select id="profBelt" class="form-select border-0 bg-light py-3"><option value="white">Biały</option><option value="blue">Niebieski</option><option value="purple">Purpurowy</option><option value="brown">Brązowy</option><option value="black">Czarny</option></select></div>
+                  <div class="col-6"><select id="profStyle" class="form-select border-0 bg-light py-3"><option value="GI">GI</option><option value="NoGi">NoGi</option><option value="GI+NoGi">Mix</option></select></div>
+              </div>
+              <input type="number" id="profWeight" class="form-control mb-4 py-3 border-0 bg-light" placeholder="Waga (kg)">
+              <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-4">Zapisz ustawienia</button>
+            </form>
+            <button id="logoutBtn" class="btn btn-link text-danger w-100 mt-3 text-decoration-none small">Wyloguj się</button>
           </div>
         </div>
+      </div>
     </div>
 
     <div class="modal fade" id="addEventModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
-          <div class="modal-header border-0"><h5 class="modal-title fw-bold">Dodaj Matę</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body">
+        <div class="modal-content border-0" style="border-radius: 25px;">
+          <div class="modal-body p-4">
+            <h5 class="fw-bold mb-4">Ustaw Sparingi</h5>
             <form id="addEventForm">
-              <input type="text" id="eventName" class="form-control mb-3" placeholder="Nazwa wydarzenia" required>
-              <input type="text" id="eventLocation" class="form-control mb-3" placeholder="Lokalizacja / Klub" required>
-              <textarea id="eventNote" class="form-control mb-3" placeholder="Dodatkowe informacje (opcjonalnie)" rows="2"></textarea>
-              <div class="mb-4">
-                  <label class="small text-muted mb-1 d-block">Data i godzina startu</label>
-                  <input type="datetime-local" id="eventDate" class="form-control" required>
+              <input type="text" id="eventName" class="form-control mb-3 py-2 border-0 bg-light" placeholder="Nazwa wydarzenia" required>
+              <input type="text" id="eventLocation" class="form-control mb-3 py-2 border-0 bg-light" placeholder="Klub / Miasto" required>
+              <textarea id="eventNote" class="form-control mb-3 py-2 border-0 bg-light" placeholder="Zasady / Notatki" rows="2"></textarea>
+              <div class="row g-2 mb-4">
+                  <div class="col-8"><input type="datetime-local" id="eventDate" class="form-control py-2 border-0 bg-light" required></div>
+                  <div class="col-4"><input type="number" id="eventLimit" class="form-control py-2 border-0 bg-light" placeholder="Limit osób"></div>
               </div>
-              <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">OPUBLIKUJ</button>
+              <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-4">OPUBLIKUJ</button>
             </form>
           </div>
         </div>
@@ -259,6 +193,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -279,7 +214,7 @@
         const auth = getAuth(app);
 
         let currentUser = null;
-        let userProfile = { name: '', belt: 'white', weight: '', style: 'GI' };
+        let userProfile = {};
         let calendar = null;
         const beltRank = { "black": 4, "brown": 3, "purple": 2, "blue": 1, "white": 0 };
 
@@ -296,13 +231,10 @@
         });
 
         function initCalendar() {
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'pl',
-                headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
-                firstDay: 1,
-                eventClick: (info) => { window.openParticipants(info.event.id, info.event.title); }
+            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                initialView: 'dayGridMonth', locale: 'pl', firstDay: 1,
+                headerToolbar: { left: 'prev', center: 'title', right: 'next' },
+                eventClick: (info) => window.openParticipants(info.event.id, info.event.title)
             });
             calendar.render();
         }
@@ -322,129 +254,66 @@
                 snapshot.forEach((docSnap) => {
                     const ev = docSnap.data();
                     const id = docSnap.id;
-                    const participants = ev.participants || [];
-                    const myEntry = participants.find(p => p.uid === currentUser.uid);
+                    const parts = ev.participants || [];
+                    const myEntry = parts.find(p => p.uid === currentUser.uid);
+                    const limit = ev.limit || Infinity;
 
-                    if (calendar) {
-                        calendar.addEvent({
-                            id: id, title: ev.name || 'Mata', start: ev.date,
-                            backgroundColor: participants.length > 0 ? '#0d6efd' : '#6c757d', borderColor: '#0d6efd'
-                        });
-                    }
+                    if (calendar) calendar.addEvent({ id, title: ev.name, start: ev.date, color: parts.length >= limit ? '#ef4444' : '#0d6efd' });
 
-                    const sorted = [...participants].sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
+                    const sorted = [...parts].sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
                     let partHtml = sorted.map(p => `<span class="participant-tag belt-${p.belt}">${p.name}</span>`).join('');
 
                     list.innerHTML += `
-                        <div class="card event-card mb-3">
+                        <div class="card event-card animate-in">
                             <div class="card-body p-4">
-                                ${ev.creatorId === currentUser.uid ? `<button class="btn border-0 text-danger position-absolute top-0 end-0 m-2" onclick="window.deleteEvent('${id}')"><i class="fas fa-trash-alt"></i></button>` : ''}
-                                <h5 class="fw-bold mb-1"><span class="event-title-link" onclick="window.openParticipants('${id}', '${(ev.name || 'Mata').replace(/'/g, "\\'")}')">${ev.name || 'Mata'}</span></h5>
-                                <p class="small text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i> ${ev.location} | <i class="fas fa-clock me-1"></i> ${ev.date.replace('T', ' ')}</p>
-                                ${ev.note ? `<div class="note-text">"${ev.note}"</div>` : ''}
-                                <div class="mb-4">${partHtml || '<span class="text-muted small">Czekamy na chętnych...</span>'}</div>
-                                <div class="row g-2">
-                                    <div class="col-12">
-                                        <button class="btn btn-action w-100 ${myEntry ? 'btn-outline-danger' : 'btn-dark'} py-2 fw-bold" onclick="window.handleJoinLeave('${id}', ${myEntry ? `'${JSON.stringify(myEntry).replace(/"/g, '&quot;')}'` : 'null'})">
-                                            ${myEntry ? '<i class="fas fa-sign-out-alt me-2"></i>WYPISZ SIĘ' : '<i class="fas fa-hand-fist me-2"></i>DOŁĄCZ DO MATY'}
-                                        </button>
-                                    </div>
+                                ${ev.creatorId === currentUser.uid ? `<button class="btn text-danger position-absolute top-0 end-0 m-2 border-0" onclick="window.deleteEvent('${id}')"><i class="fas fa-trash-alt"></i></button>` : ''}
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="fw-900 m-0"><span class="event-title-link" onclick="window.openParticipants('${id}', '${ev.name.replace(/'/g, "\\'")}')">${ev.name}</span></h5>
+                                    <span class="capacity-badge">${parts.length} / ${ev.limit || '∞'}</span>
                                 </div>
+                                <p class="small text-muted mb-3"><i class="fas fa-map-marker-alt me-1"></i> ${ev.location} | <i class="fas fa-clock me-1"></i> ${ev.date.replace('T', ' ')}</p>
+                                ${ev.note ? `<div class="note-box">${ev.note}</div>` : ''}
+                                <div class="mb-4">${partHtml || '<span class="text-muted small">Czekamy na pierwszych odważnych...</span>'}</div>
+                                <button class="btn w-100 py-3 fw-bold rounded-4 ${myEntry ? 'btn-outline-danger' : (parts.length >= limit ? 'btn-secondary disabled' : 'btn-dark')}" 
+                                        onclick="window.handleJoinLeave('${id}', ${myEntry ? `'${JSON.stringify(myEntry).replace(/"/g, '&quot;')}'` : 'null'}, ${parts.length >= limit})">
+                                    ${myEntry ? 'WYPISZ MNIE' : (parts.length >= limit ? 'MATA PEŁNA' : 'DOŁĄCZ DO MATY')}
+                                </button>
                             </div>
                         </div>`;
                 });
             });
         }
 
-        window.openParticipants = async (eventId, eventName) => {
-            const docSnap = await getDoc(doc(db, 'events', eventId));
-            if (!docSnap.exists()) return;
-            const participants = docSnap.data().participants || [];
-            const sorted = participants.sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
-            const myEntry = participants.find(p => p.uid === currentUser.uid);
-            
-            document.getElementById('modalEventName').innerText = eventName;
-            document.getElementById('modalParticipantsList').innerHTML = sorted.map(p => `
-                <div class="modal-list-item">
-                    <div class="participant-tag belt-${p.belt} me-3" style="width: 5px; height: 35px; padding: 0;"></div>
-                    <div><div class="fw-bold">${p.name}</div><div class="small text-muted">${p.style} | ${p.weight}kg</div></div>
-                </div>`).join('') || '<div class="p-5 text-center text-muted">Brak zapisów. Bądź pierwszy!</div>';
-
-            const actionArea = document.getElementById('modalActionArea');
-            if (myEntry) {
-                actionArea.innerHTML = `<button class="btn btn-outline-danger w-100 py-3 fw-bold" onclick="window.handleJoinLeave('${eventId}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}'); bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();">WYPISZ MNIE</button>`;
+        window.handleJoinLeave = async (id, entry, isFull) => {
+            if (entry) {
+                await updateDoc(doc(db, 'events', id), { participants: arrayRemove(JSON.parse(entry)) });
+                Swal.fire({ icon: 'success', title: 'Wypisano', showConfirmButton: false, timer: 1000 });
             } else {
-                actionArea.innerHTML = `<button class="btn btn-dark w-100 py-3 fw-bold" onclick="window.handleJoinLeave('${eventId}', null); bootstrap.Modal.getInstance(document.getElementById('participantsModal')).hide();">DOŁĄCZ DO MATY</button>`;
-            }
-            new bootstrap.Modal(document.getElementById('participantsModal')).show();
-        };
-
-        window.handleJoinLeave = async (id, entryJson) => {
-            if (entryJson) {
-                await updateDoc(doc(db, 'events', id), { participants: arrayRemove(JSON.parse(entryJson)) });
-            } else {
-                if(!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
+                if (isFull) return;
+                if (!userProfile.name) return new bootstrap.Modal(document.getElementById('profileModal')).show();
                 await updateDoc(doc(db, 'events', id), { 
                     participants: arrayUnion({ uid: currentUser.uid, name: userProfile.name, belt: userProfile.belt, weight: userProfile.weight, style: userProfile.style }) 
                 });
+                Swal.fire({ icon: 'success', title: 'Na macie!', showConfirmButton: false, timer: 1000 });
             }
         };
 
-        window.deleteEvent = async (id) => { if(confirm("Usunąć to wydarzenie?")) await deleteDoc(doc(db, "events", id)); };
+        window.openParticipants = async (eventId, eventName) => {
+            const snap = await getDoc(doc(db, 'events', eventId));
+            const data = snap.data();
+            const parts = data.participants || [];
+            const sorted = parts.sort((a, b) => (beltRank[b.belt] || 0) - (beltRank[a.belt] || 0));
+            const myEntry = parts.find(p => p.uid === currentUser.uid);
+            
+            document.getElementById('modalEventName').innerText = eventName;
+            document.getElementById('modalParticipantsList').innerHTML = sorted.map(p => `
+                <div class="d-flex align-items-center p-3 border-bottom">
+                    <div class="participant-tag belt-${p.belt} me-3" style="width: 5px; height: 35px; padding: 0;"></div>
+                    <div><div class="fw-bold">${p.name}</div><div class="small text-muted">${p.style} | ${p.weight}kg</div></div>
+                </div>`).join('') || '<div class="p-5 text-center text-muted">Mata jest pusta.</div>';
 
-        // --- View Switching with Animation ---
-        document.getElementById('btnListView').onclick = () => {
-            const list = document.getElementById('section-list');
-            const cal = document.getElementById('section-calendar');
-            list.style.display = 'block';
-            cal.style.display = 'none';
-            document.getElementById('btnListView').className = 'btn btn-toggle btn-dark';
-            document.getElementById('btnCalendarView').className = 'btn btn-toggle btn-outline-dark';
-        };
-
-        document.getElementById('btnCalendarView').onclick = () => {
-            const list = document.getElementById('section-list');
-            const cal = document.getElementById('section-calendar');
-            list.style.display = 'none';
-            cal.style.display = 'block';
-            document.getElementById('btnListView').className = 'btn btn-toggle btn-outline-dark';
-            document.getElementById('btnCalendarView').className = 'btn btn-toggle btn-dark';
-            if (calendar) calendar.render();
-        };
-
-        // --- Form Handlers ---
-        document.getElementById('profileForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const up = { name: document.getElementById('profName').value, belt: document.getElementById('profBelt').value, weight: document.getElementById('profWeight').value, style: document.getElementById('profStyle').value };
-            await setDoc(doc(db, "users", currentUser.uid), up);
-            userProfile = up;
-            bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
-        };
-
-        document.getElementById('addEventForm').onsubmit = async (e) => {
-            e.preventDefault();
-            await addDoc(collection(db, "events"), {
-                name: document.getElementById('eventName').value, location: document.getElementById('eventLocation').value, note: document.getElementById('eventNote').value, date: document.getElementById('eventDate').value,
-                createdAt: new Date(), participants: [], creatorId: currentUser.uid
-            });
-            bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
-            e.target.reset();
-        };
-
-        document.getElementById('openProfile').onclick = () => new bootstrap.Modal(document.getElementById('profileModal')).show();
-        document.getElementById('logoutBtn').onclick = () => signOut(auth);
-        
-        document.getElementById('loginEmailBtn').onclick = () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Błąd: " + e.message));
-        };
-
-        document.getElementById('registerEmailBtn').onclick = () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Błąd: " + e.message));
-        };
-    </script>
-</body>
-</html>
+            const area = document.getElementById('modalActionArea');
+            const isFull = parts.length >= (data.limit || Infinity);
+            
+            if (myEntry) {
+                area.innerHTML = `<button class="btn btn-outline-danger w-100 py-3 fw-bold rounded-4" onclick="window.handleJoinLeave('${eventId}', '${JSON.stringify(myEntry).replace(/"/g, '&quot;')}', false); bootstrap.Modal.
